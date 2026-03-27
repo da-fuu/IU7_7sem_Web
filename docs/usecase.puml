@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Пользователь" as user
+actor "Администратор" as admin
+admin -|> user
+
+rectangle "TimeTracker" {
+  usecase "Запустить/остановить таймер" as UC_Timer
+  usecase "Добавить запись времени вручную" as UC_Manual
+  usecase "Редактировать/удалить свою запись" as UC_EditRecord
+  usecase "Управлять личными категориями" as UC_ManageOwnCategories
+  usecase "Просмотреть личную статистику" as UC_ViewStats
+
+  usecase "Управлять базовыми категориями" as UC_ManageDefaultCategories
+}
+
+user --> UC_Timer
+user --> UC_Manual
+user --> UC_EditRecord
+user --> UC_ManageOwnCategories
+user --> UC_ViewStats
+
+admin --> UC_ManageDefaultCategories
+
+@enduml

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_Admin_Category" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.13.1">
+  <bpmn:collaboration id="Collaboration_Admin">
+    <bpmn:participant id="Participant_Backend" name="Бизнес-логика" processRef="Process_Backend_Logic" />
+    <bpmn:participant id="Participant_User" name="Администратор" processRef="Process_User_Logic" />
+    <bpmn:messageFlow id="Flow_M1" name="Запрос текущих категорий" sourceRef="Activity_Request_Screen" targetRef="Activity_Get_Init_Data" />
+    <bpmn:messageFlow id="Flow_M2" name="Список базовых категорий" sourceRef="Activity_Get_Init_Data" targetRef="Activity_Request_Screen" />
+    <bpmn:messageFlow id="Flow_M3" name="Данные новой категории" sourceRef="Activity_Submit_Data" targetRef="Activity_Process_Data" />
+    <bpmn:messageFlow id="Flow_M4" name="Результат валидации" sourceRef="Activity_Process_Data" targetRef="Gateway_Check_Result" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Backend_Logic" isExecutable="false">
+    <bpmn:task id="Activity_Get_Init_Data" name="Загрузить базовые категории из БД" />
+    <bpmn:task id="Activity_Process_Data" name="Сохранить категорию" />
+  </bpmn:process>
+  <bpmn:process id="Process_User_Logic" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_User" name="Создать базовую категорию">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Activity_Request_Screen" name="Открыть панель администратора">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_Error_Loop</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="Activity_Select_Spot" name="Ввести название, выбрать цвет">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateThrowEvent id="Activity_Submit_Data" name="Нажать Создать">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:exclusiveGateway id="Gateway_Check_Result" name="Валидация пройдена?">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_Success</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Error_Loop</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="Activity_Success_Screen" name="Отобразить добавленную категорию">
+      <bpmn:incoming>Flow_Success</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="EndEvent_User" name="Успешное завершение">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_User" targetRef="Activity_Request_Screen" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Request_Screen" targetRef="Activity_Select_Spot" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Activity_Select_Spot" targetRef="Activity_Submit_Data" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Activity_Submit_Data" targetRef="Gateway_Check_Result" />
+    <bpmn:sequenceFlow id="Flow_Success" name="Да" sourceRef="Gateway_Check_Result" targetRef="Activity_Success_Screen" />
+    <bpmn:sequenceFlow id="Flow_Error_Loop" name="Нет (дубликат)" sourceRef="Gateway_Check_Result" targetRef="Activity_Request_Screen" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Activity_Success_Screen" targetRef="EndEvent_User" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_Admin">
+      <bpmndi:BPMNShape id="Participant_Backend_di" bpmnElement="Participant_Backend" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="960" height="120" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Get_Init_Data_di" bpmnElement="Activity_Get_Init_Data">
+        <dc:Bounds x="330" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Process_Data_di" bpmnElement="Activity_Process_Data">
+        <dc:Bounds x="640" y="100" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="260" width="960" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_User_di" bpmnElement="StartEvent_User">
+        <dc:Bounds x="210" y="392" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="195" y="436" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Request_Screen_di" bpmnElement="Activity_Request_Screen">
+        <dc:Bounds x="330" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Select_Spot_di" bpmnElement="Activity_Select_Spot">
+        <dc:Bounds x="490" y="370" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Submit_Data_di" bpmnElement="Activity_Submit_Data">
+        <dc:Bounds x="640" y="370" width="100" height="80" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="646" y="456" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Check_Result_di" bpmnElement="Gateway_Check_Result" isMarkerVisible="true">
+        <dc:Bounds x="795" y="385" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="830" y="436" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_Success_Screen_di" bpmnElement="Activity_Success_Screen">
+        <dc:Bounds x="910" y="370" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_User_di" bpmnElement="EndEvent_User">
+        <dc:Bounds x="1042" y="392" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="246" y="410" />
+        <di:waypoint x="330" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="430" y="410" />
+        <di:waypoint x="490" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="590" y="410" />
+        <di:waypoint x="640" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="740" y="410" />
+        <di:waypoint x="795" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Success_di" bpmnElement="Flow_Success">
+        <di:waypoint x="845" y="410" />
+        <di:waypoint x="910" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Error_Loop_di" bpmnElement="Flow_Error_Loop">
+        <di:waypoint x="820" y="435" />
+        <di:waypoint x="820" y="520" />
+        <di:waypoint x="380" y="520" />
+        <di:waypoint x="380" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_End_di" bpmnElement="Flow_End">
+        <di:waypoint x="1010" y="410" />
+        <di:waypoint x="1042" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M1_di" bpmnElement="Flow_M1">
+        <di:waypoint x="360" y="370" />
+        <di:waypoint x="360" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="265" y="265" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M2_di" bpmnElement="Flow_M2">
+        <di:waypoint x="400" y="180" />
+        <di:waypoint x="400" y="370" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="408" y="265" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M3_di" bpmnElement="Flow_M3">
+        <di:waypoint x="670" y="370" />
+        <di:waypoint x="670" y="180" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="593" y="265" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M4_di" bpmnElement="Flow_M4">
+        <di:waypoint x="710" y="180" />
+        <di:waypoint x="710" y="333" />
+        <di:waypoint x="820" y="333" />
+        <di:waypoint x="820" y="385" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="735" y="296" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
