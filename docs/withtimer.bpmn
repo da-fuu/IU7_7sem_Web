@@ -10,7 +10,7 @@
   </bpmn:collaboration>
   <bpmn:process id="Process_Backend_Logic" isExecutable="false">
     <bpmn:task id="Activity_Get_Init_Data" name="Проверка незавершенных сессий" />
-    <bpmn:task id="Activity_Process_Timer" name="Расчет длительности и бизнес-валидация" />
+    <bpmn:task id="Activity_Process_Timer" name="Расчет длительности и валидация" />
   </bpmn:process>
   <bpmn:process id="Process_User_Logic" isExecutable="false">
     <bpmn:startEvent id="StartEvent_User" name="Запустить трекинг времени">
@@ -62,6 +62,7 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_Process_Timer_di" bpmnElement="Activity_Process_Timer">
         <dc:Bounds x="640" y="100" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
         <dc:Bounds x="160" y="260" width="960" height="330" />
