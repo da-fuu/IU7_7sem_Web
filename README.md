@@ -73,3 +73,41 @@
 
 #### Создание новой базовой категории
 ![addcategory](docs/addcategory.png)
+
+## 11. Описание типа приложения
+- Тип приложения: Mobile App (Android).
+- Язык программирования: Kotlin.
+- Паттерн слоя представления (UI): MVVM, отрисовка UI: Jetpack Compose.
+- СУБД: SQLite, ORM: Room.
+- DI: Koin.
+
+## 12. Раскрытие проекта на уровнях L1 и L2 нотации С4
+### Уровень L1:
+![L1](docs/L1.svg)
+
+### Уровень L2:
+![L2](docs/L2.svg)
+
+## 13. Раскрытие проекта на уровне L3 нотации С4
+
+![L3](docs/L3.svg)
+
+## 14. Раскрытие проекта на уровне L4 нотации С4
+
+![L4_1](docs/L4_1.svg)
+
+![L4_2](docs/L4_2.svg)
+
+## 15. UML-диаграммы последовательностей
+
+#### Запуск и остановка таймера
+![seq_withtimer](docs/seq_withtimer.svg)
+
+#### Добавление записи вручную
+![seq_addtask](docs/seq_addtask.svg)
+
+#### Создание новой базовой категории
+![seq_addcategory](docs/seq_addcategory.svg)
+
+## 16. Диаграмма БД в нотации DBML
+![db_diagram](docs/db.png)
