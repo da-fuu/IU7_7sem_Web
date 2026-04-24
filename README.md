@@ -1,93 +1,75 @@
-# PPO
+## 1. Название проекта
+**TimeTracker**
 
+## 2. Краткое описание идеи проекта
+Проект представляет собой приложение-таймтрекер для учета, категоризации и анализа распределения личного времени. Пользователь может фиксировать затраченное на различные дела время вручную или с помощью встроенного секундомера, привязывая активности к настраиваемым категориям (учеба, отдых, дорога). Накопленные данные используются для построения статистики по дням, неделям и месяцам, что помогает выявлять оптимизировать распорядок дня.
 
+## 3. Краткое описание предметной области
+Предметная область приложения — управление личным временем (тайм-менеджмент) и аналитика продуктивности пользователя. В системе ведется строгий хронологический учет временных интервалов (сессий), потраченных на выполнение конкретных задач. Основными сущностями предметной области являются: **Пользователь** (владелец данных и настроек), **Категория** (тип деятельности, характеризующийся названием и цветом), **Запись времени** (конкретный временной интервал, имеющий время начала, время окончания и привязанную категорию) и **Статистический отчет** (агрегированные данные о затраченном времени за выбранный период).
 
-## Getting started
+## 4. Краткий анализ аналогичных решений
+Критерии:
+*   Удобство таймера (в 1 клик): Важно для минимизации барьера входа; если запуск трекера долгий, пользователь перестанет им пользоваться.
+*   Доступность глубокой аналитики: Многие сервисы прячут графики и детализацию за платной подпиской.
+*   Ориентация интерфейса: Большинство популярных систем нацелены на B2B (команды, выставление счетов клиентам), что перегружает интерфейс для обычного человека.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+| Название аналога | Наличие быстрого таймера (в 1 клик) | Глубокая аналитика в бесплатной версии | Ориентация продукта (B2B / B2C) |
+| :--- | :--- | :--- | :--- |
+| Toggl Track | Да | Ограничена (расширенные отчеты платные) | B2B |
+| Clockify | Да | Частично (многое доступно, но UI перегружен) | B2B |
+| aTimeLogger | Нет (упор на ручной ввод) | Да | B2C |
+| TimeTracker | Да | Да | B2C |
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 5. Краткое обоснование целесообразности и актуальности проекта
+В современном мире люди часто сталкиваются с проблемой прокрастинации и неэффективного расхода времени на нецелевые задачи. Существующие популярные решения (Toggl, Clockify) в основном ориентированы на корпоративный сектор, перегружены лишним функционалом (биллинг, команды, проекты) или ограничивают возможности аналитики в бесплатных версиях. Разработка собственного минималистичного тайм-трекера позволит создать удобный инструмент с фокусом исключительно на личную продуктивность и бесплатную детальную статистику.
 
-## Add your files
+## 6. Краткое описание акторов (ролей)
+1.  **Пользователь:** Основной актор системы. Запускает и останавливает таймер, добавляет или редактирует прошедшие записи времени, создает пользовательские категории для активностей и запрашивает вывод личной статистики.
+2.  **Администратор:** Привилегированный актор. Имеет все возможности обычного пользователя, а также дополнительно управляет базовыми (системными) категориями, которые доступны всем пользователям по умолчанию.
 
-* [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## 7. Use-Case диаграмма
+![usecase](docs/usecase.svg)
 
-```
-cd existing_repo
-git remote add origin https://git.iu7.bmstu.ru/zhma23u535/ppo.git
-git branch -M main
-git push -uf origin main
-```
+## 8. ER-диаграмма сущностей
+![er](docs/er.svg)
 
-## Integrate with your tools
+## 9. Пользовательские сценарии
+#### Сценарий 1: Запуск и остановка таймера
+*Актор: Пользователь*
+1. Пользователь открывает главный экран приложения (вкладка "Таймер").
+2. Пользователь выбирает из выпадающего списка категорию активности.
+3. Пользователь нажимает кнопку "Старт".
+4. Система фиксирует текущее время как время начала и начинает отображать на экране секундомер.
+5. По завершении активности Пользователь нажимает кнопку "Стоп".
+6. Система фиксирует время остановки, вычисляет длительность, проверяет, что она больше 1 минуты, сохраняет запись времени в базу данных.
 
-* [Set up project integrations](https://git.iu7.bmstu.ru/zhma23u535/ppo/-/settings/integrations)
+#### Сценарий 2: Добавление записи вручную
+*Актор: Пользователь*
+1. Пользователь переходит на экран "Добавить запись вручную".
+2. Система запрашивает у базы данных актуальный список категорий и отображает форму.
+3. Пользователь выбирает категорию, указывает дату, время начала (15:00) и время окончания (16:30).
+4. Пользователь нажимает кнопку "Сохранить".
+5. Система отправляет данные на валидацию. Бизнес-логика обнаруживает, что в этот день с 15:30 до 16:00 уже есть запись.
+6. Система возвращает ошибку и выводит на экран сообщение об ошибке.
+7. Пользователь корректирует время начала на 16:00 и снова нажимает "Сохранить".
+8. Система успешно валидирует данные и сохраняет запись.
 
-## Collaborate with your team
+#### Сценарий 3: Создание новой базовой категории
+*Актор: Администратор*
+1. Администратор авторизуется в системе и переходит в "Панель управления".
+2. Выбирает раздел "Базовые категории" и нажимает кнопку "Добавить категорию".
+3. Вводит название категории, выбирает цвет.
+4. Нажимает кнопку "Создать".
+5. Система сохраняет категорию в базу данных.
+6. С этого момента при регистрации новых пользователей эта категория автоматически появляется в их списке доступных категорий.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+## 10. Формализация ключевых бизнес-процессов
 
-## Test and Deploy
+#### Запуск и остановка таймера
+![withtimer](docs/withtimer.png)
 
-Use the built-in continuous integration in GitLab.
+#### Добавление записи вручную
+![addtask](docs/addtask.png)
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+#### Создание новой базовой категории
+![addcategory](docs/addcategory.png)
