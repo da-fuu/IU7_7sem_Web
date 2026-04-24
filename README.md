@@ -101,13 +101,13 @@
 ## 15. UML-диаграммы последовательностей
 
 #### Запуск и остановка таймера
-![seq_withtimer](docs/seq_withtimer.png)
+![seq_withtimer](docs/seq_withtimer.svg)
 
 #### Добавление записи вручную
-![seq_addtask](docs/seq_addtask.png)
+![seq_addtask](docs/seq_addtask.svg)
 
 #### Создание новой базовой категории
-![seq_addcategory](docs/seq_addcategory.png)
+![seq_addcategory](docs/seq_addcategory.svg)
 
 ## 16. Диаграмма БД в нотации DBML
 ![db_diagram](docs/db.png)
