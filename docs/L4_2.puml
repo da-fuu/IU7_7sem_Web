@@ -1,0 +1,48 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+interface "Domain::ITimeRecordRepository" as ITimeRecordRepository <<Interface>> #LightGray
+class "Domain::TimeRecord" as TimeRecord <<Entity>> #LightGray
+
+package "Доступ к данным" #FFF3E0 {
+    class TimeRecordEntity <<Database Entity>> {
+        - uid: uuid
+        - start_timestamp: Instant
+        - end_timestamp: Instant?
+        - cat_id: uuid
+        - note: String
+    }
+
+    interface TimeRecordDao <<Room DAO>> {
+        + suspend insert(entity: TimeRecordEntity): Long
+        + suspend findOverlapping(start: Instant, end: Instant): List<TimeRecordEntity>
+    }
+
+    abstract class AppDatabase <<RoomDatabase>> {
+        + timeRecordDao(): TimeRecordDao
+    }
+
+    class TimeRecordMapper <<Mapper>> {
+        + toDomain(entity: TimeRecordEntity): TimeRecord
+        + toEntity(domain: TimeRecord): TimeRecordEntity
+    }
+
+    class TimeRecordRepositoryImpl <<Repository>> {
+        - dao: TimeRecordDao
+        - mapper: TimeRecordMapper
+        + suspend saveRecord(record: TimeRecord): Result<Unit>
+        + suspend getOverlappingRecords(start: Instant, end: Instant): List<TimeRecord>
+    }
+
+    TimeRecordRepositoryImpl ..|> ITimeRecordRepository
+    TimeRecordRepositoryImpl o--> TimeRecordDao
+    TimeRecordRepositoryImpl o--> TimeRecordMapper
+    AppDatabase *--> TimeRecordDao
+
+    TimeRecordDao ..> TimeRecordEntity
+    TimeRecordMapper ..> TimeRecordEntity
+    TimeRecordMapper ..> TimeRecord
+}
+
+@enduml

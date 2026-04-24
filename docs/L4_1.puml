@@ -1,0 +1,53 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "Бизнес-логика" #E8F5E9 {
+
+    class TimeRecord <<Entity>> {
+        - id: uuid
+        - startTime: Instant
+        - endTime: Instant?
+        - categoryId: uuid
+        - description: String
+        + getDurationMinutes(): Int
+        + isValid(): Boolean
+    }
+
+    class Category <<Entity>> {
+        - id: uuid
+        - name: String
+        - colorHex: String
+        - isDefault: Boolean
+    }
+
+    interface ITimeRecordRepository <<Interface>> {
+        + suspend saveRecord(record: TimeRecord): Result<Unit>
+        + suspend getOverlappingRecords(start: Instant, end: Instant): List<TimeRecord>
+    }
+
+    interface ICategoryRepository <<Interface>> {
+        + getAllCategoriesFlow(): Flow<List<Category>>
+    }
+
+    class AddTimeRecordUseCase <<UseCase>> {
+        - recordRepository: ITimeRecordRepository
+        + suspend execute(record: TimeRecord): Result<Unit>
+    }
+
+    class GetCategoriesUseCase <<UseCase>> {
+        - categoryRepository: ICategoryRepository
+        + execute(): Flow<List<Category>>
+    }
+
+    TimeRecord "1" --> "1" Category : "categoryId"
+    AddTimeRecordUseCase o--> ITimeRecordRepository : "DI"
+    GetCategoriesUseCase o--> ICategoryRepository : "DI"
+
+    AddTimeRecordUseCase ..> TimeRecord
+    GetCategoriesUseCase ..> Category
+    ITimeRecordRepository ..> TimeRecord
+    ICategoryRepository ..> Category
+}
+
+@enduml

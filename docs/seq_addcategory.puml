@@ -1,0 +1,58 @@
+@startuml
+autonumber
+skinparam maxMessageSize 150
+skinparam ParticipantPadding 20
+
+actor "Администратор" as admin
+boundary "AdminScreen\n(UI Compose)" as ui
+control "AdminViewModel\n(Presentation)" as vm
+control "CreateCategoryUseCase\n(Domain)" as uc
+database "CategoryRepository\n(Data)" as repo
+
+admin -> ui : Открывает панель администратора
+activate ui
+
+ui -> vm : Запрос списка категорий
+activate vm
+vm -> repo : getAllCategories()
+activate repo
+repo --> vm : List<Category>
+deactivate repo
+vm --> ui : UI State (Список)
+deactivate vm
+
+admin -> ui : Вводит название, цвет и жмет "Создать"
+ui -> vm : createCategory(name, color)
+activate vm
+
+vm -> uc : execute(Category)
+activate uc
+
+uc -> repo : findByName(name)
+activate repo
+repo --> uc : Результат поиска
+deactivate repo
+
+alt #mistyrose Если найдено совпадение (Дубликат)
+    uc --> vm : Error("Категория уже существует")
+    vm --> ui : Показать ошибку (Нет)
+    ui --> admin : Видит ошибку, возвращается к вводу
+else #honeydew Если валидация пройдена (Да)
+    uc -> repo : saveCategory(Category)
+    activate repo
+    repo --> uc : Success
+    deactivate repo
+    uc --> vm : Success
+
+    vm -> repo : getAllCategories() (обновление списка)
+    activate repo
+    repo --> vm : List<Category>
+    deactivate repo
+
+    vm --> ui : Обновленный UI State
+    ui --> admin : Видит добавленную категорию
+end
+deactivate uc
+deactivate vm
+deactivate ui
+@enduml

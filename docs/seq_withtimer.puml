@@ -1,0 +1,58 @@
+@startuml
+autonumber
+skinparam maxMessageSize 150
+skinparam ParticipantPadding 20
+
+actor "Пользователь" as user
+boundary "TimerScreen\n(UI Compose)" as ui
+control "TimerViewModel\n(Presentation)" as vm
+control "StopTimerUseCase\n(Domain)" as uc
+database "TimeRecordRepository\n(Data)" as repo
+
+user -> ui : Открывает вкладку Таймер
+activate ui
+
+ui -> vm : Проверка незавершенных сессий
+activate vm
+vm -> repo : getActiveSession()
+activate repo
+repo --> vm : null (Нет активных)
+deactivate repo
+vm --> ui : UI State (Ожидание)
+deactivate vm
+
+user -> ui : Выбирает категорию, жмет "Старт"
+ui -> vm : startTimer(categoryId)
+activate vm
+vm --> ui : UI State (Таймер тикает)
+deactivate vm
+
+...Проходит некоторое время...
+
+user -> ui : Жмет "Стоп"
+ui -> vm : stopTimer()
+activate vm
+
+vm -> uc : execute(startTime, endTime, categoryId)
+activate uc
+
+uc -> uc : Расчет длительности (endTime - startTime)
+
+alt #mistyrose Если длительность < 1 мин (Ошибка)
+    uc --> vm : Error("Сессия слишком короткая")
+    vm --> ui : Показать ошибку (Сброс таймера)
+    ui --> user : Видит предупреждение
+else #honeydew Если сессия валидна (> 1 мин) (Успех)
+    uc -> repo : saveRecord(TimeRecord)
+    activate repo
+    repo --> uc : Success
+    deactivate repo
+    uc --> vm : Success
+    vm --> ui : Обновить статистику
+    ui --> user : Успешное завершение, видит графики
+end
+
+deactivate uc
+deactivate vm
+deactivate ui
+@enduml
