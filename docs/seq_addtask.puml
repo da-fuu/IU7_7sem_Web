@@ -1,0 +1,56 @@
+@startuml
+autonumber
+skinparam maxMessageSize 150
+skinparam ParticipantPadding 20
+
+actor "Пользователь" as user
+boundary "AddRecordScreen\n(UI Compose)" as ui
+control "AddRecordViewModel\n(Presentation)" as vm
+control "AddManualRecordUseCase\n(Domain)" as uc
+database "TimeRecordRepository\n(Data)" as repo
+
+user -> ui : Нажимает "Добавить запись вручную"
+activate ui
+
+ui -> vm : Запрос списка категорий
+activate vm
+vm -> repo : getAllCategories()
+activate repo
+repo --> vm : List<Category>
+deactivate repo
+vm --> ui : UI State (Форма загружена)
+deactivate vm
+
+user -> ui : Вводит время начала, конца, категорию
+user -> ui : Жмет "Сохранить" (Отправить данные)
+
+ui -> vm : submitRecord(start, end, category)
+activate vm
+
+vm -> uc : execute(TimeRecord)
+activate uc
+
+uc -> repo : findOverlapping(start, end)
+activate repo
+note right of repo: SQL запрос в БД для поиска\nпересечений по времени
+repo --> uc : List<TimeRecord> (Найденные пересечения)
+deactivate repo
+
+alt #mistyrose Если пересечения найдены (Нет)
+    uc --> vm : Error("Время пересекается с другой записью")
+    vm --> ui : Показать ошибку пересечения
+    ui --> user : Видит ошибку, корректирует время
+else #honeydew Если пересечений нет (Да)
+    uc -> repo : saveRecord(TimeRecord)
+    activate repo
+    repo --> uc : Success
+    deactivate repo
+    uc --> vm : Success
+    vm --> ui : Закрыть форму, обновить список
+    ui --> user : Видит новую запись в списке
+end
+
+deactivate uc
+deactivate vm
+deactivate ui
+@enduml

@@ -1,0 +1,26 @@
+@startuml
+!include <c4/C4_Component.puml>
+
+
+Person(user, "Пользователь", "Взаимодействует с экраном устройства")
+
+ContainerDb(local_db, "Локальная БД", "SQLite (Room)", "Хранение данных")
+
+Container_Boundary(app_container, "TimeTracker") {
+
+    Component(ui, "Компонент реализации UI", "Jetpack Compose, ViewModels", "Отвечает за отрисовку экранов (MVVM) и передачу намерений пользователя в слой бизнес-логики.")
+
+    Component(domain, "Компонент бизнес-логики", "Kotlin UseCases", "Содержит правила валидации, подсчет времени и абстрактные интерфейсы репозиториев.")
+
+    Component(data, "Компонент доступа к данным", "Repository Pattern, Room DAO", "Реализует интерфейсы из слоя бизнес-логики. Отвечает за маппинг транспортных Entity в доменные модели и работу с СУБД.")
+}
+
+Rel(user, ui, "Нажимает кнопки, вводит данные", "Touch UI")
+
+Rel(ui, domain, "Вызывает сценарии (Use Cases) и подписывается на данные", "Kotlin Flow")
+
+Rel(data, domain, "Реализует интерфейсы репозиториев", "Implements")
+
+Rel(data, local_db, "Выполняет SQL-запросы", "Room ORM")
+
+@enduml
