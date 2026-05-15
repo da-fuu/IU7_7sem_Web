@@ -1,53 +1,81 @@
 @startuml
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
 
 package "Бизнес-логика" #E8F5E9 {
 
-    class TimeRecord <<Entity>> {
-        - id: uuid
-        - startTime: Instant
-        - endTime: Instant?
-        - categoryId: uuid
-        - description: String
-        + getDurationMinutes(): Int
-        + isValid(): Boolean
+    class User <<Entity>> {
+        - id: UserId
+        - login: String
+        - name: String
+        - passwordHash: String
+        - role: UserRole
     }
 
     class Category <<Entity>> {
-        - id: uuid
+        - id: CategoryId
+        - userId: UserId?
         - name: String
         - colorHex: String
         - isDefault: Boolean
     }
 
+    class TimeRecord <<Entity>> {
+        - id: RecordId
+        - userId: UserId
+        - categoryId: CategoryId
+        - startTime: Instant
+        - endTime: Instant?
+        + getDurationMinutes(): Long
+    }
+
+    interface IUserRepository <<Interface>> {
+        + suspend findByLogin(login: String): User?
+        + suspend saveUser(user: User): Result<Unit>
+        + suspend getUserRole(userId: UserId): UserRole?
+    }
+
     interface ITimeRecordRepository <<Interface>> {
         + suspend saveRecord(record: TimeRecord): Result<Unit>
-        + suspend getOverlappingRecords(start: Instant, end: Instant): List<TimeRecord>
+        + suspend getOverlappingRecords(...): List<TimeRecord>
+        + suspend getActiveSession(userId: UserId): TimeRecord?
+        + suspend deleteRecord(recordId: RecordId): Result<Unit>
     }
 
     interface ICategoryRepository <<Interface>> {
-        + getAllCategoriesFlow(): Flow<List<Category>>
+        + getCategoriesFlow(userId: UserId): Flow<List<Category>>
+        + suspend saveCategory(category: Category): Result<Unit>
+        + suspend findCategoryByName(...): Category?
     }
 
-    class AddTimeRecordUseCase <<UseCase>> {
-        - recordRepository: ITimeRecordRepository
-        + suspend execute(record: TimeRecord): Result<Unit>
+    interface IPasswordHasher <<Interface>> {
+        + hash(raw: String): String
+        + verify(raw: String, hashed: String): Boolean
     }
 
-    class GetCategoriesUseCase <<UseCase>> {
-        - categoryRepository: ICategoryRepository
-        + execute(): Flow<List<Category>>
+    package "Use Cases" #FFFFFF {
+        class RegisterUserUseCase <<UseCase>>
+        class LoginUserUseCase <<UseCase>>
+        class StartTimerUseCase <<UseCase>>
+        class StopTimerUseCase <<UseCase>>
+        class AddManualRecordUseCase <<UseCase>>
+        class AdminManageBaseCategoryUseCase <<UseCase>>
     }
 
-    TimeRecord "1" --> "1" Category : "categoryId"
-    AddTimeRecordUseCase o--> ITimeRecordRepository : "DI"
-    GetCategoriesUseCase o--> ICategoryRepository : "DI"
+    User "1" <-- "*" Category : "Владеет"
+    User "1" <-- "*" TimeRecord : "Владеет"
+    Category "1" <-- "*" TimeRecord : "Относится к"
 
-    AddTimeRecordUseCase ..> TimeRecord
-    GetCategoriesUseCase ..> Category
-    ITimeRecordRepository ..> TimeRecord
-    ICategoryRepository ..> Category
+    RegisterUserUseCase o--> IUserRepository
+    RegisterUserUseCase o--> IPasswordHasher
+
+    StartTimerUseCase o--> ITimeRecordRepository
+    AddManualRecordUseCase o--> ITimeRecordRepository
+
+    AdminManageBaseCategoryUseCase o--> ICategoryRepository
+    AdminManageBaseCategoryUseCase o--> IUserRepository
 }
 
 @enduml
