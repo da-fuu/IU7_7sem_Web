@@ -130,4 +130,38 @@ class DataIntegrationTest {
         )
         assertEquals(1, overlaps3.size)
     }
+
+    @Test
+    fun `delete category should succeed`() = runTest {
+        val userId = UserId(UUID.randomUUID())
+        val categoryId = CategoryId(UUID.randomUUID())
+        val category = Category(categoryId, userId, "Test", "#FFF", false)
+
+        categoryRepository.saveCategory(category)
+        val result = categoryRepository.deleteCategory(categoryId)
+
+        assertTrue(result.isSuccess)
+        val found = categoryRepository.findCategoryByName(userId, "Test")
+        assertTrue(found == null)
+    }
+
+    @Test
+    fun `get time records should return all user records`() = runTest {
+        val userId = UserId(UUID.randomUUID())
+        val categoryId = CategoryId(UUID.randomUUID())
+        val baseTime = Instant.now()
+
+        userRepository.saveUser(User(userId, "user", "User", "hash", UserRole.USER))
+        categoryRepository.saveCategory(Category(categoryId, userId, "Work", "#FF0000", false))
+
+        val record1 = TimeRecord(RecordId(UUID.randomUUID()), userId, categoryId, baseTime, baseTime.plusSeconds(3600))
+        val record2 = TimeRecord(RecordId(UUID.randomUUID()), userId, categoryId, baseTime.plusSeconds(4000), null)
+
+        timeRecordRepository.saveRecord(record1)
+        timeRecordRepository.saveRecord(record2)
+
+        val records = timeRecordRepository.getTimeRecords(userId)
+
+        assertEquals(2, records.size)
+    }
 }

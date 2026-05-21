@@ -15,5 +15,6 @@ interface ITimeRecordRepository {
     ): List<TimeRecord>
 
     suspend fun getActiveSession(userId: UserId): TimeRecord?
+    suspend fun getTimeRecords(userId: UserId): List<TimeRecord>
     suspend fun deleteRecord(recordId: RecordId): Result<Unit>
 }

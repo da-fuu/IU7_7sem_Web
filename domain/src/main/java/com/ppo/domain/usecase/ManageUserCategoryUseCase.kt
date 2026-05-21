@@ -11,7 +11,12 @@ class ManageUserCategoryUseCase(
             return Result.failure(IllegalArgumentException("Имя категории не может быть пустым"))
         }
 
+        if (!category.colorHex.matches(Regex("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"))) {
+            return Result.failure(IllegalArgumentException("Неверный формат цвета. Используйте #RRGGBB или #RGB"))
+        }
+
         if (category.isDefault) {
+
             return Result.failure(IllegalStateException("Пользователь не может создавать системные категории"))
         }
 

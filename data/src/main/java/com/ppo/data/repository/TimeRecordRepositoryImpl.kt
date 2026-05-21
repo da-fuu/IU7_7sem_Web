@@ -41,6 +41,10 @@ class TimeRecordRepositoryImpl(
         timeRecordDao.getActiveSession(userId.value.toString())?.toDomain()
     }
 
+    override suspend fun getTimeRecords(userId: UserId): List<TimeRecord> = withContext(Dispatchers.IO) {
+        timeRecordDao.getAllByUserId(userId.value.toString()).map { it.toDomain() }
+    }
+
     override suspend fun deleteRecord(recordId: RecordId): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             timeRecordDao.deleteById(recordId.value.toString())
