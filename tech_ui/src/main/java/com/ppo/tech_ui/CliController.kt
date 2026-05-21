@@ -14,7 +14,12 @@ class CliController(
     private val startTimerUseCase: StartTimerUseCase,
     private val stopTimerUseCase: StopTimerUseCase,
     private val addManualRecordUseCase: AddManualRecordUseCase,
-    private val adminManageBaseCategoryUseCase: AdminManageBaseCategoryUseCase
+    private val adminManageBaseCategoryUseCase: AdminManageBaseCategoryUseCase,
+    private val manageUserCategoryUseCase: ManageUserCategoryUseCase,
+    private val getCategoriesUseCase: GetCategoriesUseCase,
+    private val getTimeRecordsUseCase: GetTimeRecordsUseCase,
+    private val deleteCategoryUseCase: DeleteCategoryUseCase,
+    private val adminDeleteBaseCategoryUseCase: AdminDeleteBaseCategoryUseCase
 ) {
 
     fun handleArgs(args: Array<String>) {
@@ -29,10 +34,15 @@ class CliController(
                 "register" -> handleRegister(args.drop(1))
                 "login" -> handleLogin(args.drop(1))
                 "logout" -> handleLogout()
+                "categories" -> handleGetCategories()
+                "records" -> handleGetRecords()
                 "start" -> handleStartTimer(args.drop(1))
                 "stop" -> handleStopTimer()
                 "add-manual" -> handleAddManual(args.drop(1))
+                "create-category" -> handleCreateCategory(args.drop(1))
                 "create-base-category" -> handleCreateBaseCategory(args.drop(1))
+                "delete-category" -> handleDeleteCategory(args.drop(1))
+                "delete-base-category" -> handleDeleteBaseCategory(args.drop(1))
                 else -> println("Unknown command")
             }
         }
@@ -70,6 +80,28 @@ class CliController(
             println("Success: Logged out")
         } else {
             println("Not authenticated")
+        }
+    }
+
+    private suspend fun handleGetCategories() {
+        val userId = getAuthenticatedUserOrNull() ?: return
+        val categories = getCategoriesUseCase(userId)
+        if (categories.isEmpty()) {
+            println("No categories found")
+        } else {
+            println("=== Categories ===")
+            categories.forEach { println("${it.id.value} | ${it.name} (${it.colorHex}) ${if (it.isDefault) "[DEFAULT]" else ""}") }
+        }
+    }
+
+    private suspend fun handleGetRecords() {
+        val userId = getAuthenticatedUserOrNull() ?: return
+        val records = getTimeRecordsUseCase(userId)
+        if (records.isEmpty()) {
+            println("No records found")
+        } else {
+            println("=== Records ===")
+            records.forEach { println("${it.id.value} | Cat: ${it.categoryId.value} | Start: ${it.startTime} | End: ${it.endTime ?: "ACTIVE"} | ${it.description}") }
         }
     }
 
@@ -116,6 +148,24 @@ class CliController(
             .onFailure { println("Error: ${it.message}") }
     }
 
+    private suspend fun handleCreateCategory(args: List<String>) {
+        val userId = getAuthenticatedUserOrNull() ?: return
+        if (args.size < 2) {
+            println("Usage: create-category <name> <color_hex>")
+            return
+        }
+        val category = Category(
+            id = CategoryId(UUID.randomUUID()),
+            userId = userId,
+            name = args[0],
+            colorHex = args[1],
+            isDefault = false
+        )
+        val result = manageUserCategoryUseCase(category)
+        result.onSuccess { println("Success: Category created") }
+            .onFailure { println("Error: ${it.message}") }
+    }
+
     private suspend fun handleCreateBaseCategory(args: List<String>) {
         val userId = getAuthenticatedUserOrNull() ?: return
         if (args.size < 2) {
@@ -131,6 +181,30 @@ class CliController(
         )
         val result = adminManageBaseCategoryUseCase(category, userId)
         result.onSuccess { println("Success: Base category created") }
+            .onFailure { println("Error: ${it.message}") }
+    }
+
+    private suspend fun handleDeleteCategory(args: List<String>) {
+        getAuthenticatedUserOrNull() ?: return
+        if (args.isEmpty()) {
+            println("Usage: delete-category <category_uuid>")
+            return
+        }
+        val categoryId = CategoryId(UUID.fromString(args[0]))
+        val result = deleteCategoryUseCase(categoryId)
+        result.onSuccess { println("Success: Category deleted") }
+            .onFailure { println("Error: ${it.message}") }
+    }
+
+    private suspend fun handleDeleteBaseCategory(args: List<String>) {
+        val userId = getAuthenticatedUserOrNull() ?: return
+        if (args.isEmpty()) {
+            println("Usage: delete-base-category <category_uuid>")
+            return
+        }
+        val categoryId = CategoryId(UUID.fromString(args[0]))
+        val result = adminDeleteBaseCategoryUseCase(categoryId, userId)
+        result.onSuccess { println("Success: Base category deleted") }
             .onFailure { println("Error: ${it.message}") }
     }
 
@@ -150,10 +224,15 @@ class CliController(
               register <login> <name> <password> [USER/ADMIN]
               login <login> <password>
               logout
+              categories
+              records
               start <category_uuid>
               stop
               add-manual <category_uuid> <start_iso> <end_iso> <description>
+              create-category <name> <color_hex>
               create-base-category <name> <color_hex>
+              delete-category <category_uuid>
+              delete-base-category <category_uuid>
         """.trimIndent()
         )
     }

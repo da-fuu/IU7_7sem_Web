@@ -3,6 +3,7 @@ package com.ppo.tech_ui
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ppo.data.db.AppDatabase
+import com.ppo.data.PasswordHasherImpl
 import com.ppo.data.repository.*
 import com.ppo.domain.usecase.*
 import java.io.File
@@ -35,6 +36,11 @@ fun main(args: Array<String>) {
     val stopTimerUseCase = StopTimerUseCase(timeRecordRepository)
     val addManualRecordUseCase = AddManualRecordUseCase(timeRecordRepository)
     val adminManageBaseCategoryUseCase = AdminManageBaseCategoryUseCase(categoryRepository, userRepository)
+    val manageUserCategoryUseCase = ManageUserCategoryUseCase(categoryRepository)
+    val getCategoriesUseCase = GetCategoriesUseCase(categoryRepository)
+    val getTimeRecordsUseCase = GetTimeRecordsUseCase(timeRecordRepository)
+    val deleteCategoryUseCase = DeleteCategoryUseCase(categoryRepository)
+    val adminDeleteBaseCategoryUseCase = AdminDeleteBaseCategoryUseCase(categoryRepository, userRepository)
 
     val controller = CliController(
         sessionFile = sessionFile,
@@ -43,7 +49,12 @@ fun main(args: Array<String>) {
         startTimerUseCase = startTimerUseCase,
         stopTimerUseCase = stopTimerUseCase,
         addManualRecordUseCase = addManualRecordUseCase,
-        adminManageBaseCategoryUseCase = adminManageBaseCategoryUseCase
+        adminManageBaseCategoryUseCase = adminManageBaseCategoryUseCase,
+        manageUserCategoryUseCase = manageUserCategoryUseCase,
+        getCategoriesUseCase = getCategoriesUseCase,
+        getTimeRecordsUseCase = getTimeRecordsUseCase,
+        deleteCategoryUseCase = deleteCategoryUseCase,
+        adminDeleteBaseCategoryUseCase = adminDeleteBaseCategoryUseCase
     )
 
     controller.handleArgs(args)
