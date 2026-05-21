@@ -26,3 +26,4 @@ rootProject.name = "TimeTracker"
 // include(":app")
 include(":domain")
 include(":data")
+include(":tech_ui")
