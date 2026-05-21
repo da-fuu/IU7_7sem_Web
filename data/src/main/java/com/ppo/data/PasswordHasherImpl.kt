@@ -1,4 +1,4 @@
-package com.ppo.data.repository
+package com.ppo.data
 
 import com.ppo.domain.repository.IPasswordHasher
 import java.security.MessageDigest

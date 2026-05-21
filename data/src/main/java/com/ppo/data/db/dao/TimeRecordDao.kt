@@ -34,6 +34,9 @@ interface TimeRecordDao {
     @Query("SELECT * FROM time_records WHERE user_id = :userId AND end_time IS NULL LIMIT 1")
     suspend fun getActiveSession(userId: String): TimeRecordEntity?
 
+    @Query("SELECT * FROM time_records WHERE user_id = :userId ORDER BY start_time DESC")
+    suspend fun getAllByUserId(userId: String): List<TimeRecordEntity>
+
     @Query("DELETE FROM time_records WHERE uid = :recordId")
     suspend fun deleteById(recordId: String): Int
 }

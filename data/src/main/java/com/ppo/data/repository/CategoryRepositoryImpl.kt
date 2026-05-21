@@ -4,6 +4,7 @@ import com.ppo.data.db.dao.CategoryDao
 import com.ppo.data.mapper.toDomain
 import com.ppo.data.mapper.toEntity
 import com.ppo.domain.model.Category
+import com.ppo.domain.model.CategoryId
 import com.ppo.domain.model.UserId
 import com.ppo.domain.repository.ICategoryRepository
 import kotlinx.coroutines.Dispatchers
@@ -30,5 +31,14 @@ class CategoryRepositoryImpl(
 
     override suspend fun findCategoryByName(userId: UserId?, name: String): Category? = withContext(Dispatchers.IO) {
         categoryDao.findByName(userId?.value?.toString(), name)?.toDomain()
+    }
+
+    override suspend fun deleteCategory(categoryId: CategoryId): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            categoryDao.deleteById(categoryId.value.toString())
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
