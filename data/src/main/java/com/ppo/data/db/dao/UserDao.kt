@@ -10,11 +10,11 @@ import com.ppo.domain.model.UserRole
 @Dao
 interface UserDao {
     @Query("SELECT * FROM users WHERE login = :login LIMIT 1")
-    fun findByLogin(login: String): UserEntity?
+    suspend fun findByLogin(login: String): UserEntity?
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    fun insert(user: UserEntity): Long
+    suspend fun insert(user: UserEntity): Long
 
     @Query("SELECT role FROM users WHERE uid = :userId")
-    fun getUserRole(userId: String): UserRole?
+    suspend fun getUserRole(userId: String): UserRole?
 }

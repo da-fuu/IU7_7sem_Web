@@ -13,8 +13,8 @@ interface CategoryDao {
     fun getCategoriesFlow(userId: String): Flow<List<CategoryEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(category: CategoryEntity): Long
+    suspend fun insert(category: CategoryEntity): Long
 
     @Query("SELECT * FROM categories WHERE (user_id = :userId OR (user_id IS NULL AND :userId IS NULL)) AND name = :name LIMIT 1")
-    fun findByName(userId: String?, name: String): CategoryEntity?
+    suspend fun findByName(userId: String?, name: String): CategoryEntity?
 }

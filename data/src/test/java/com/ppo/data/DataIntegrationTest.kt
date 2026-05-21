@@ -1,6 +1,5 @@
 package com.ppo.data
 
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ppo.data.db.AppDatabase
@@ -20,7 +19,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import java.time.Instant
 import java.util.UUID
@@ -34,13 +32,7 @@ class DataIntegrationTest {
 
     @Before
     fun setup() {
-        // Mock Looper for Android classes used by Room
-        io.mockk.mockkStatic(android.os.Looper::class)
-        val mockLooper = io.mockk.mockk<android.os.Looper>(relaxed = true)
-        io.mockk.every { android.os.Looper.getMainLooper() } returns mockLooper
-
-        val mockContext = io.mockk.mockk<android.content.Context>(relaxed = true)
-        db = Room.inMemoryDatabaseBuilder(mockContext, AppDatabase::class.java)
+        db = Room.inMemoryDatabaseBuilder<AppDatabase>()
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(kotlinx.coroutines.Dispatchers.Unconfined)
             .build()

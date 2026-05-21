@@ -1,9 +1,7 @@
 package com.ppo.data.db
 
-import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 import com.ppo.data.db.dao.CategoryDao
 import com.ppo.data.db.dao.TimeRecordDao

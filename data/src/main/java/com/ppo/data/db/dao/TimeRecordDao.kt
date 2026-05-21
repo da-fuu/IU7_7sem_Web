@@ -10,7 +10,7 @@ import java.time.Instant
 @Dao
 interface TimeRecordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insert(record: TimeRecordEntity): Long
+    suspend fun insert(record: TimeRecordEntity): Long
 
     @Query(
         """
@@ -24,7 +24,7 @@ interface TimeRecordDao {
           )
     """
     )
-    fun findOverlapping(
+    suspend fun findOverlapping(
         userId: String,
         start: Instant,
         end: Instant?,
@@ -32,8 +32,8 @@ interface TimeRecordDao {
     ): List<TimeRecordEntity>
 
     @Query("SELECT * FROM time_records WHERE user_id = :userId AND end_time IS NULL LIMIT 1")
-    fun getActiveSession(userId: String): TimeRecordEntity?
+    suspend fun getActiveSession(userId: String): TimeRecordEntity?
 
     @Query("DELETE FROM time_records WHERE uid = :recordId")
-    fun deleteById(recordId: String): Int
+    suspend fun deleteById(recordId: String): Int
 }
