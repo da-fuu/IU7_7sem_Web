@@ -10,9 +10,10 @@ interface ITimeRecordRepository {
     suspend fun getOverlappingRecords(
         userId: UserId,
         start: Instant,
-        end: Instant,
+        end: Instant?,
         excludeRecordId: RecordId? = null
     ): List<TimeRecord>
+
     suspend fun getActiveSession(userId: UserId): TimeRecord?
     suspend fun deleteRecord(recordId: RecordId): Result<Unit>
 }
