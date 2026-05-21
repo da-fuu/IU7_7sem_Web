@@ -13,4 +13,5 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation(libs.androidx.room.runtime)
     implementation(libs.sqlite.bundled)
+    implementation(libs.koin.core)
 }

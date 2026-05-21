@@ -2,62 +2,83 @@ package com.ppo.tech_ui
 
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import com.ppo.data.db.AppDatabase
 import com.ppo.data.PasswordHasherImpl
+import com.ppo.data.db.AppDatabase
 import com.ppo.data.repository.*
+import com.ppo.domain.repository.*
 import com.ppo.domain.usecase.*
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import org.koin.core.context.startKoin
+import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.factoryOf
+import org.koin.dsl.module
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
-fun main(args: Array<String>) {
-    val appDir = File(System.getProperty("user.home"), ".timetracker")
-    if (!appDir.exists()) {
-        appDir.mkdirs()
+val appModule = module {
+    single {
+        val appDir = File(System.getProperty("user.home"), ".timetracker")
+        if (!appDir.exists()) appDir.mkdirs()
+        appDir
     }
 
-    val dbFile = File(appDir, "timetracker.db")
-    val sessionFile = File(appDir, "session.txt")
+    single { File(get<File>(), "session.txt") }
 
-    val db = Room.databaseBuilder<AppDatabase>(
-        name = dbFile.absolutePath
-    )
-        .setDriver(BundledSQLiteDriver())
-        .setQueryCoroutineContext(Dispatchers.IO)
-        .build()
+    single {
+        val dbFile = File(get<File>(), "timetracker.db")
+        Room.databaseBuilder<AppDatabase>(name = dbFile.absolutePath)
+            .setDriver(BundledSQLiteDriver())
+            .setQueryCoroutineContext(Dispatchers.IO)
+            .build()
+    }
 
-    val userRepository = UserRepositoryImpl(db.userDao())
-    val categoryRepository = CategoryRepositoryImpl(db.categoryDao())
-    val timeRecordRepository = TimeRecordRepositoryImpl(db.timeRecordDao())
-    val passwordHasher = PasswordHasherImpl()
+    single { get<AppDatabase>().userDao() }
+    single { get<AppDatabase>().categoryDao() }
+    single { get<AppDatabase>().timeRecordDao() }
 
-    val registerUseCase = RegisterUserUseCase(userRepository, passwordHasher)
-    val loginUseCase = LoginUserUseCase(userRepository, passwordHasher)
-    val startTimerUseCase = StartTimerUseCase(timeRecordRepository)
-    val stopTimerUseCase = StopTimerUseCase(timeRecordRepository)
-    val addManualRecordUseCase = AddManualRecordUseCase(timeRecordRepository)
-    val adminManageBaseCategoryUseCase = AdminManageBaseCategoryUseCase(categoryRepository, userRepository)
-    val manageUserCategoryUseCase = ManageUserCategoryUseCase(categoryRepository)
-    val getCategoriesUseCase = GetCategoriesUseCase(categoryRepository)
-    val getTimeRecordsUseCase = GetTimeRecordsUseCase(timeRecordRepository)
-    val deleteCategoryUseCase = DeleteCategoryUseCase(categoryRepository)
-    val adminDeleteBaseCategoryUseCase = AdminDeleteBaseCategoryUseCase(categoryRepository, userRepository)
+    single<IUserRepository> { UserRepositoryImpl(get()) }
+    single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
+    single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get()) }
+    single<IPasswordHasher> { PasswordHasherImpl() }
 
-    val controller = CliController(
-        sessionFile = sessionFile,
-        registerUseCase = registerUseCase,
-        loginUseCase = loginUseCase,
-        startTimerUseCase = startTimerUseCase,
-        stopTimerUseCase = stopTimerUseCase,
-        addManualRecordUseCase = addManualRecordUseCase,
-        adminManageBaseCategoryUseCase = adminManageBaseCategoryUseCase,
-        manageUserCategoryUseCase = manageUserCategoryUseCase,
-        getCategoriesUseCase = getCategoriesUseCase,
-        getTimeRecordsUseCase = getTimeRecordsUseCase,
-        deleteCategoryUseCase = deleteCategoryUseCase,
-        adminDeleteBaseCategoryUseCase = adminDeleteBaseCategoryUseCase
-    )
+    factoryOf(::RegisterUserUseCase)
+    factoryOf(::LoginUserUseCase)
+    factoryOf(::StartTimerUseCase)
+    factoryOf(::StopTimerUseCase)
+    factoryOf(::AddManualRecordUseCase)
+    factoryOf(::AdminManageBaseCategoryUseCase)
+    factoryOf(::ManageUserCategoryUseCase)
+    factoryOf(::GetCategoriesUseCase)
+    factoryOf(::GetTimeRecordsUseCase)
+    factoryOf(::DeleteCategoryUseCase)
+    factoryOf(::AdminDeleteBaseCategoryUseCase)
 
+    single {
+        CliController(
+            sessionFile = get(),
+            registerUseCase = get(),
+            loginUseCase = get(),
+            startTimerUseCase = get(),
+            stopTimerUseCase = get(),
+            addManualRecordUseCase = get(),
+            adminManageBaseCategoryUseCase = get(),
+            manageUserCategoryUseCase = get(),
+            getCategoriesUseCase = get(),
+            getTimeRecordsUseCase = get(),
+            deleteCategoryUseCase = get(),
+            adminDeleteBaseCategoryUseCase = get()
+        )
+    }
+}
+
+fun main(args: Array<String>) {
+    val koinApp = startKoin {
+        modules(appModule)
+    }
+
+    val controller = koinApp.koin.get<CliController>()
     controller.handleArgs(args)
 
-    db.close()
+    koinApp.koin.get<AppDatabase>().close()
 }
