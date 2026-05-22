@@ -4,6 +4,12 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
+tasks.jar {
+    dependsOn(":domain:jar")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}
+
 dependencies {
     implementation(project(":domain"))
     implementation(libs.androidx.room.runtime)
