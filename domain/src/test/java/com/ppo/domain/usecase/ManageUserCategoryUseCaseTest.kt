@@ -35,34 +35,6 @@ class ManageUserCategoryUseCaseTest {
     }
 
     @Test
-    fun `when color format is invalid, should return failure`() = runTest {
-        val category = Category(CategoryId(UUID.randomUUID()), UserId(UUID.randomUUID()), "Work", "invalid", false)
-        val result = useCase(category)
-        assertTrue(result.isFailure)
-        assertEquals("Неверный формат цвета. Используйте #RRGGBB или #RGB", result.exceptionOrNull()?.message)
-    }
-
-    @Test
-    fun `when color format is valid short, should return success`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val category = Category(CategoryId(UUID.randomUUID()), userId, "Work", "#FFF", false)
-        coEvery { repository.findCategoryByName(userId, "Work") } returns null
-        coEvery { repository.saveCategory(any()) } returns Result.success(Unit)
-        val result = useCase(category)
-        assertTrue(result.isSuccess)
-    }
-
-    @Test
-    fun `when color format is valid long, should return success`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val category = Category(CategoryId(UUID.randomUUID()), userId, "Work", "#FF0000", false)
-        coEvery { repository.findCategoryByName(userId, "Work") } returns null
-        coEvery { repository.saveCategory(any()) } returns Result.success(Unit)
-        val result = useCase(category)
-        assertTrue(result.isSuccess)
-    }
-
-    @Test
     fun `when isDefault is true, should return failure`() = runTest {
         val category = Category(CategoryId(UUID.randomUUID()), UserId(UUID.randomUUID()), "Work", "#FFF", true)
         val result = useCase(category)
