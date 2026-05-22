@@ -28,6 +28,7 @@ package "Бизнес-логика" #E8F5E9 {
         - categoryId: CategoryId
         - startTime: Instant
         - endTime: Instant?
+        - description: String
         + getDurationMinutes(): Long
     }
 
@@ -41,6 +42,7 @@ package "Бизнес-логика" #E8F5E9 {
         + suspend saveRecord(record: TimeRecord): Result<Unit>
         + suspend getOverlappingRecords(...): List<TimeRecord>
         + suspend getActiveSession(userId: UserId): TimeRecord?
+        + suspend getTimeRecords(userId: UserId): List<TimeRecord>
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
     }
 
@@ -48,6 +50,7 @@ package "Бизнес-логика" #E8F5E9 {
         + getCategoriesFlow(userId: UserId): Flow<List<Category>>
         + suspend saveCategory(category: Category): Result<Unit>
         + suspend findCategoryByName(...): Category?
+        + suspend deleteCategory(categoryId: CategoryId): Result<Unit>
     }
 
     interface IPasswordHasher <<Interface>> {
@@ -61,7 +64,13 @@ package "Бизнес-логика" #E8F5E9 {
         class StartTimerUseCase <<UseCase>>
         class StopTimerUseCase <<UseCase>>
         class AddManualRecordUseCase <<UseCase>>
+        class EditTimeRecordUseCase <<UseCase>>
+        class GetCategoriesUseCase <<UseCase>>
+        class GetTimeRecordsUseCase <<UseCase>>
+        class ManageUserCategoryUseCase <<UseCase>>
+        class DeleteCategoryUseCase <<UseCase>>
         class AdminManageBaseCategoryUseCase <<UseCase>>
+        class AdminDeleteBaseCategoryUseCase <<UseCase>>
     }
 
     User "1" <-- "*" Category : "Владеет"
@@ -70,12 +79,22 @@ package "Бизнес-логика" #E8F5E9 {
 
     RegisterUserUseCase o--> IUserRepository
     RegisterUserUseCase o--> IPasswordHasher
+    LoginUserUseCase o--> IUserRepository
+    LoginUserUseCase o--> IPasswordHasher
 
     StartTimerUseCase o--> ITimeRecordRepository
+    StopTimerUseCase o--> ITimeRecordRepository
     AddManualRecordUseCase o--> ITimeRecordRepository
+    EditTimeRecordUseCase o--> ITimeRecordRepository
+    GetTimeRecordsUseCase o--> ITimeRecordRepository
 
+    GetCategoriesUseCase o--> ICategoryRepository
+    ManageUserCategoryUseCase o--> ICategoryRepository
+    DeleteCategoryUseCase o--> ICategoryRepository
     AdminManageBaseCategoryUseCase o--> ICategoryRepository
     AdminManageBaseCategoryUseCase o--> IUserRepository
+    AdminDeleteBaseCategoryUseCase o--> ICategoryRepository
+    AdminDeleteBaseCategoryUseCase o--> IUserRepository
 }
 
 @enduml

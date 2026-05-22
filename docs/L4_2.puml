@@ -7,19 +7,25 @@ class "Domain::TimeRecord" as TimeRecord <<Entity>> #LightGray
 
 package "Доступ к данным" #FFF3E0 {
     class TimeRecordEntity <<Database Entity>> {
-        - uid: uuid
-        - start_timestamp: Instant
-        - end_timestamp: Instant?
-        - cat_id: uuid
-        - note: String
+        - uid: String
+        - user_id: String
+        - category_id: String
+        - start_time: Instant
+        - end_time: Instant?
+        - description: String
     }
 
     interface TimeRecordDao <<Room DAO>> {
         + suspend insert(entity: TimeRecordEntity): Long
-        + suspend findOverlapping(start: Instant, end: Instant): List<TimeRecordEntity>
+        + suspend findOverlapping(...): List<TimeRecordEntity>
+        + suspend getActiveSession(userId: String): TimeRecordEntity?
+        + suspend getAllByUserId(userId: String): List<TimeRecordEntity>
+        + suspend deleteById(recordId: String): Int
     }
 
     abstract class AppDatabase <<RoomDatabase>> {
+        + userDao(): UserDao
+        + categoryDao(): CategoryDao
         + timeRecordDao(): TimeRecordDao
     }
 
@@ -30,9 +36,11 @@ package "Доступ к данным" #FFF3E0 {
 
     class TimeRecordRepositoryImpl <<Repository>> {
         - dao: TimeRecordDao
-        - mapper: TimeRecordMapper
         + suspend saveRecord(record: TimeRecord): Result<Unit>
-        + suspend getOverlappingRecords(start: Instant, end: Instant): List<TimeRecord>
+        + suspend getOverlappingRecords(...): List<TimeRecord>
+        + suspend getActiveSession(userId: UserId): TimeRecord?
+        + suspend getTimeRecords(userId: UserId): List<TimeRecord>
+        + suspend deleteRecord(recordId: RecordId): Result<Unit>
     }
 
     TimeRecordRepositoryImpl ..|> ITimeRecordRepository

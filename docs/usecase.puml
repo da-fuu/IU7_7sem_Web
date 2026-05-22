@@ -7,6 +7,8 @@ actor "Администратор" as admin
 admin -|> user
 
 rectangle "TimeTracker" {
+  usecase "Зарегистрироваться" as UC_Register
+  usecase "Войти" as UC_Login
   usecase "Запустить/остановить таймер" as UC_Timer
   usecase "Добавить запись времени вручную" as UC_Manual
   usecase "Редактировать/удалить свою запись" as UC_EditRecord
@@ -15,6 +17,8 @@ rectangle "TimeTracker" {
   usecase "Управлять базовыми категориями" as UC_ManageDefaultCategories
 }
 
+user --> UC_Register
+user --> UC_Login
 user --> UC_Timer
 user --> UC_Manual
 user --> UC_EditRecord
