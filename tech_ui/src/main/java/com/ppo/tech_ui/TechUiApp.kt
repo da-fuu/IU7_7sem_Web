@@ -59,6 +59,7 @@ val appModule = module {
     single {
         CliController(
             sessionFile = get(named("session_file")),
+            userRepository = get(),
             registerUseCase = get(),
             loginUseCase = get(),
             startTimerUseCase = get(),

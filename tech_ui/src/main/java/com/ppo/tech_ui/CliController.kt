@@ -1,6 +1,7 @@
 package com.ppo.tech_ui
 
 import com.ppo.domain.model.*
+import com.ppo.domain.repository.IUserRepository
 import com.ppo.domain.usecase.*
 import java.io.File
 import java.time.Instant
@@ -9,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 
 class CliController(
     private val sessionFile: File,
+    private val userRepository: IUserRepository,
     private val registerUseCase: RegisterUserUseCase,
     private val loginUseCase: LoginUserUseCase,
     private val startTimerUseCase: StartTimerUseCase,
@@ -208,12 +210,20 @@ class CliController(
             .onFailure { println("Error: ${it.message}") }
     }
 
-    private fun getAuthenticatedUserOrNull(): UserId? {
+    private suspend fun getAuthenticatedUserOrNull(): UserId? {
         if (!sessionFile.exists()) {
             println("Error: Authentication required")
             return null
         }
-        return UserId(UUID.fromString(sessionFile.readText().trim()))
+        val userId = UserId(UUID.fromString(sessionFile.readText().trim()))
+
+        if (userRepository.getUserRole(userId) == null) {
+            println("Error: User session is invalid (user not found). Please login again.")
+            sessionFile.delete()
+            return null
+        }
+
+        return userId
     }
 
     private fun printHelp() {
