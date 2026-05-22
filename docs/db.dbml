@@ -3,30 +3,30 @@ Project TimeTracker {
 }
 
 Table users {
-  id integer [primary key, increment]
+  uid varchar(36) [primary key]
+  login varchar(100) [unique, not null]
   name varchar(100) [not null]
-  email varchar(255) [unique, not null]
   password_hash varchar(255) [not null]
-  role varchar(20) [default: 'user']
+  role varchar(20) [not null]
 }
 
 Table categories {
-  id integer [primary key, increment]
-  user_id integer [not null]
+  uid varchar(36) [primary key]
+  user_id varchar(36)
   name varchar(100) [not null]
-  color_hex varchar(7) [not null, default: '#000000']
-  is_default boolean [not null, default: false]
+  color_hex varchar(7) [not null]
+  is_default boolean [not null]
 }
 
 Table time_records {
-  id integer [primary key, increment]
-  user_id integer [not null]
-  category_id integer [not null]
+  uid varchar(36) [primary key]
+  user_id varchar(36) [not null]
+  category_id varchar(36) [not null]
   start_time integer [not null]
   end_time integer
-  description text
+  description text [not null]
 }
 
-Ref: categories.user_id > users.id [delete: cascade, update: cascade]
-Ref: time_records.user_id > users.id [delete: cascade, update: cascade]
-Ref: time_records.category_id > categories.id [delete: cascade, update: cascade]
+Ref: categories.user_id > users.uid [delete: cascade, update: cascade]
+Ref: time_records.user_id > users.uid [delete: cascade, update: cascade]
+Ref: time_records.category_id > categories.uid [delete: cascade, update: cascade]
