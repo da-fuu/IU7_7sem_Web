@@ -110,4 +110,4 @@
 ![seq_addcategory](docs/seq_addcategory.svg)
 
 ## 16. Диаграмма БД в нотации DBML
-![db_diagram](docs/db.png)
+![db_diagram](docs/db.svg)
