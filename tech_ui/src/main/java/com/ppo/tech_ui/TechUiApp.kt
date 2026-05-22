@@ -16,17 +16,19 @@ import org.koin.dsl.module
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+import org.koin.core.qualifier.named
+
 val appModule = module {
-    single {
+    single(named("app_dir")) {
         val appDir = File(System.getProperty("user.home"), ".timetracker")
         if (!appDir.exists()) appDir.mkdirs()
         appDir
     }
 
-    single { File(get<File>(), "session.txt") }
+    single(named("session_file")) { File(get<File>(named("app_dir")), "session.txt") }
 
     single {
-        val dbFile = File(get<File>(), "timetracker.db")
+        val dbFile = File(get<File>(named("app_dir")), "timetracker.db")
         Room.databaseBuilder<AppDatabase>(name = dbFile.absolutePath)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
@@ -56,7 +58,7 @@ val appModule = module {
 
     single {
         CliController(
-            sessionFile = get(),
+            sessionFile = get(named("session_file")),
             registerUseCase = get(),
             loginUseCase = get(),
             startTimerUseCase = get(),
@@ -71,6 +73,7 @@ val appModule = module {
         )
     }
 }
+
 
 fun main(args: Array<String>) {
     val koinApp = startKoin {
