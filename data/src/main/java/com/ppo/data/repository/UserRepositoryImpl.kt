@@ -10,21 +10,29 @@ import com.ppo.domain.repository.IUserRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+import org.slf4j.LoggerFactory
+
 class UserRepositoryImpl(
     private val userDao: UserDao
 ) : IUserRepository {
+    private val logger = LoggerFactory.getLogger(UserRepositoryImpl::class.java)
+
     override suspend fun findByLogin(login: String): User? = withContext(Dispatchers.IO) {
+        logger.debug("Searching for user by login: {}", login)
         userDao.findByLogin(login)?.toDomain()
     }
 
     override suspend fun saveUser(user: User): Result<Unit> = withContext(Dispatchers.IO) {
+        logger.info("Saving new user: {}", user.login)
         try {
             userDao.insert(user.toEntity())
             Result.success(Unit)
         } catch (e: Exception) {
+            logger.error("Failed to save user {}: {}", user.login, e.message)
             Result.failure(e)
         }
     }
+
 
     override suspend fun getUserRole(userId: UserId): UserRole? = withContext(Dispatchers.IO) {
         userDao.getUserRole(userId.value.toString())

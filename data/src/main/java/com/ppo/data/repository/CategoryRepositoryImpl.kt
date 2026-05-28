@@ -11,10 +11,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 
 class CategoryRepositoryImpl(
     private val categoryDao: CategoryDao
 ) : ICategoryRepository {
+    private val logger = LoggerFactory.getLogger(CategoryRepositoryImpl::class.java)
+
     override fun getCategoriesFlow(userId: UserId): Flow<List<Category>> {
         return categoryDao.getCategoriesFlow(userId.value.toString())
             .map { list -> list.map { it.toDomain() } }
@@ -25,6 +28,7 @@ class CategoryRepositoryImpl(
             categoryDao.insert(category.toEntity())
             Result.success(Unit)
         } catch (e: Exception) {
+            logger.error("Failed to save category {}: {}", category.name, e.message)
             Result.failure(e)
         }
     }
@@ -35,9 +39,13 @@ class CategoryRepositoryImpl(
 
     override suspend fun deleteCategory(categoryId: CategoryId): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            categoryDao.deleteById(categoryId.value.toString())
+            val deletedCount = categoryDao.deleteById(categoryId.value.toString())
+            if (deletedCount == 0) {
+                logger.warn("No category found to delete with id: {}", categoryId.value)
+            }
             Result.success(Unit)
         } catch (e: Exception) {
+            logger.error("Failed to delete category {}: {}", categoryId.value, e.message)
             Result.failure(e)
         }
     }

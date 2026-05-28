@@ -15,8 +15,13 @@ composeBom = "2026.02.01"
 jetbrainsKotlinJvm = "2.2.10"
 sqlite = "2.6.2"
 koin = "4.0.2"
+slf4j = "2.0.16"
+logback = "1.5.16"
 
 [libraries]
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback" }
+logback-core = { group = "ch.qos.logback", name = "logback-core", version.ref = "logback" }
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }

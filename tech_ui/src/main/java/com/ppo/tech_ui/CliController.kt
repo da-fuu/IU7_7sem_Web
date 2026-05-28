@@ -3,6 +3,7 @@ package com.ppo.tech_ui
 import com.ppo.domain.model.*
 import com.ppo.domain.repository.IUserRepository
 import com.ppo.domain.usecase.*
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.Instant
 import java.util.UUID
@@ -23,6 +24,7 @@ class CliController(
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
     private val adminDeleteBaseCategoryUseCase: AdminDeleteBaseCategoryUseCase
 ) {
+    private val logger = LoggerFactory.getLogger(CliController::class.java)
 
     fun handleArgs(args: Array<String>) {
         if (args.isEmpty()) {
@@ -31,21 +33,30 @@ class CliController(
         }
 
         val command = args[0]
+        logger.info("Executing command: {}", command)
         runBlocking {
-            when (command) {
-                "register" -> handleRegister(args.drop(1))
-                "login" -> handleLogin(args.drop(1))
-                "logout" -> handleLogout()
-                "categories" -> handleGetCategories()
-                "records" -> handleGetRecords()
-                "start" -> handleStartTimer(args.drop(1))
-                "stop" -> handleStopTimer()
-                "add-manual" -> handleAddManual(args.drop(1))
-                "create-category" -> handleCreateCategory(args.drop(1))
-                "create-base-category" -> handleCreateBaseCategory(args.drop(1))
-                "delete-category" -> handleDeleteCategory(args.drop(1))
-                "delete-base-category" -> handleDeleteBaseCategory(args.drop(1))
-                else -> println("Unknown command")
+            try {
+                when (command) {
+                    "register" -> handleRegister(args.drop(1))
+                    "login" -> handleLogin(args.drop(1))
+                    "logout" -> handleLogout()
+                    "categories" -> handleGetCategories()
+                    "records" -> handleGetRecords()
+                    "start" -> handleStartTimer(args.drop(1))
+                    "stop" -> handleStopTimer()
+                    "add-manual" -> handleAddManual(args.drop(1))
+                    "create-category" -> handleCreateCategory(args.drop(1))
+                    "create-base-category" -> handleCreateBaseCategory(args.drop(1))
+                    "delete-category" -> handleDeleteCategory(args.drop(1))
+                    "delete-base-category" -> handleDeleteBaseCategory(args.drop(1))
+                    else -> {
+                        logger.warn("Unknown command received: {}", command)
+                        println("Unknown command")
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Unexpected error during command execution: {}", e.message, e)
+                println("Critical error: ${e.message}")
             }
         }
     }

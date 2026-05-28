@@ -12,6 +12,7 @@ tasks.jar {
 
 dependencies {
     implementation(project(":domain"))
+    implementation(libs.slf4j.api)
     implementation(libs.androidx.room.runtime)
     implementation(libs.kotlinx.coroutines.core)
     ksp(libs.androidx.room.compiler)

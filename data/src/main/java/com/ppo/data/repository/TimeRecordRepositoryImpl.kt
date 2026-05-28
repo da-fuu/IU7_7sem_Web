@@ -9,16 +9,20 @@ import com.ppo.domain.model.UserId
 import com.ppo.domain.repository.ITimeRecordRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import java.time.Instant
 
 class TimeRecordRepositoryImpl(
     private val timeRecordDao: TimeRecordDao
 ) : ITimeRecordRepository {
+    private val logger = LoggerFactory.getLogger(TimeRecordRepositoryImpl::class.java)
+
     override suspend fun saveRecord(record: TimeRecord): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             timeRecordDao.insert(record.toEntity())
             Result.success(Unit)
         } catch (e: Exception) {
+            logger.error("Failed to save time record {}: {}", record.id.value, e.message)
             Result.failure(e)
         }
     }
@@ -47,9 +51,13 @@ class TimeRecordRepositoryImpl(
 
     override suspend fun deleteRecord(recordId: RecordId): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            timeRecordDao.deleteById(recordId.value.toString())
+            val deletedCount = timeRecordDao.deleteById(recordId.value.toString())
+            if (deletedCount == 0) {
+                logger.warn("No time record found to delete with id: {}", recordId.value)
+            }
             Result.success(Unit)
         } catch (e: Exception) {
+            logger.error("Failed to delete time record {}: {}", recordId.value, e.message)
             Result.failure(e)
         }
     }

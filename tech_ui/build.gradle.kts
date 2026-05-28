@@ -19,6 +19,9 @@ tasks.jar {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation(libs.slf4j.api)
+    implementation(libs.logback.classic)
+    implementation(libs.logback.core)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation(libs.androidx.room.runtime)
     implementation(libs.sqlite.bundled)

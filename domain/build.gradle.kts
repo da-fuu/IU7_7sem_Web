@@ -20,6 +20,7 @@ tasks.jar {
 }
 
 dependencies {
+    implementation(libs.slf4j.api)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
