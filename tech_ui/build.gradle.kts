@@ -8,15 +8,8 @@ application {
 }
 
 tasks.jar {
-    manifest {
-        attributes["Main-Class"] = "com.ppo.tech_ui.TechUiAppKt"
-    }
-}
-
-tasks.register<Jar>("fatJar") {
-    group = "build"
-    description = "Assembles a combined archive containing all dependencies"
-    archiveClassifier.set("fat")
+    dependsOn(":domain:jar", ":data:jar")
+    archiveFileName.set("tech_ui.jar")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
     manifest {
@@ -25,6 +18,18 @@ tasks.register<Jar>("fatJar") {
 
     from(sourceSets.main.get().output)
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}
+
+val copyJar = tasks.register<Copy>("copyJar") {
+    from(tasks.jar.get().archiveFile)
+    into("${project.rootDir}/dist")
+}
+
+tasks.assembleDist {
+    dependsOn(copyJar)
+}
+tasks.register<Jar>("fatJar") {
+    dependsOn("jar")
 }
 
 dependencies {
@@ -60,7 +65,6 @@ tasks.register<Jar>("dexJar") {
     archiveClassifier.set("dex-input")
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    // 1. Android-specific dependencies (TAKE PRECEDENCE)
     androidDex.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
         if (artifact.extension == "aar") {
             from(zipTree(artifact.file).matching { include("classes.jar") }.map { zipTree(it) })
@@ -69,10 +73,8 @@ tasks.register<Jar>("dexJar") {
         }
     }
 
-    // 2. App code
     from(sourceSets.main.get().output)
 
-    // 3. Regular dependencies
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
 tasks.register<Exec>("dex") {
@@ -100,7 +102,6 @@ tasks.register<Exec>("dex") {
         if (sdkDir == null) throw GradleException("Android SDK not found")
         distDir.mkdirs()
 
-        // Extract native libs for aarch64 (most common for modern phones)
         val nativeLibsDir = file("${distDir}/lib/arm64-v8a")
         nativeLibsDir.mkdirs()
 

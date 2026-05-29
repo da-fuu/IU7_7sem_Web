@@ -39,12 +39,9 @@ fun main(args: Array<String>) {
     try {
         val logFile = File(logPath)
         logFile.parentFile?.mkdirs()
-        // Use a FileOutputStream in append mode (true) and wrap it in a PrintStream
         val logStream = java.io.PrintStream(java.io.FileOutputStream(logFile, true))
-        // Redirect System.err to this file. slf4j-simple will now write to this stream.
         System.setErr(logStream)
     } catch (e: Exception) {
-        // Fallback to console if file is not writable
     }
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", logLevel)
