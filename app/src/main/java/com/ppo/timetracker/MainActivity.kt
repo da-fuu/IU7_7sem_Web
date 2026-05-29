@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    ) { _ ->
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,7 +82,6 @@ fun MainContent() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Ensure bottom bar is visible whenever logged in and not on auth screen
     val showBottomBar = isLoggedIn && currentDestination?.route != "auth"
 
     Scaffold(
@@ -90,8 +89,8 @@ fun MainContent() {
             if (showBottomBar) {
                 NavigationBar {
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                        label = { Text("Home") },
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
+                        label = { Text("Главная") },
                         selected = currentDestination?.hierarchy?.any { it.route == "dashboard" } == true,
                         onClick = {
                             navController.navigate("dashboard") {
@@ -102,8 +101,8 @@ fun MainContent() {
                         }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Categories") },
-                        label = { Text("Categories") },
+                        icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Категории") },
+                        label = { Text("Категории") },
                         selected = currentDestination?.hierarchy?.any { it.route == "categories" } == true,
                         onClick = {
                             navController.navigate("categories") {
@@ -114,8 +113,8 @@ fun MainContent() {
                         }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.History, contentDescription = "History") },
-                        label = { Text("History") },
+                        icon = { Icon(Icons.Default.History, contentDescription = "История") },
+                        label = { Text("История") },
                         selected = currentDestination?.hierarchy?.any { it.route == "records" } == true,
                         onClick = {
                             navController.navigate("records") {

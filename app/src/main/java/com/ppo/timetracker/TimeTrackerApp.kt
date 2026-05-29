@@ -41,7 +41,6 @@ class TimeTrackerApp : Application() {
         val baseDir =
             File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TimeTracker")
 
-        // Ensure base directory exists
         if (!baseDir.exists() && !baseDir.mkdirs()) {
             handleFatalError("Не удалось создать директорию приложения в Downloads")
             return
@@ -56,7 +55,6 @@ class TimeTrackerApp : Application() {
             }
         }
 
-        // 1. Logging setup
         val logPathStr = properties.getProperty("log.path", "logs/app.log")
         val logFile = resolvePath(baseDir, logPathStr)
 
@@ -83,7 +81,6 @@ class TimeTrackerApp : Application() {
         System.setProperty("org.slf4j.simpleLogger.showDateTime", "true")
         System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss")
 
-        // 2. Database setup
         val dbPathStr = properties.getProperty("db.path", "db/database.db")
         val dbFile = resolvePath(baseDir, dbPathStr)
         try {
@@ -96,7 +93,6 @@ class TimeTrackerApp : Application() {
             return
         }
 
-        // 3. Business config
         val minDuration = properties.getProperty("min.duration.minutes", "1").toLong()
         val businessConfig = BusinessConfig(minDurationMinutes = minDuration)
 
@@ -153,20 +149,16 @@ class TimeTrackerApp : Application() {
 
     private fun resolvePath(baseDir: File, path: String): File {
         return if (path.startsWith("~/")) {
-            // Map ~ to External Storage root (e.g. /sdcard/)
             File(Environment.getExternalStorageDirectory(), path.substring(2))
         } else if (path == "~") {
             Environment.getExternalStorageDirectory()
         } else {
-            // Normal relative path
             File(baseDir, path)
         }
     }
 
     private fun handleFatalError(message: String) {
-        // Show toast and exit
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-        // Small delay to let toast be seen before process dies
         Thread.sleep(2000)
         exitProcess(1)
     }

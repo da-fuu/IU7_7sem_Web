@@ -38,10 +38,10 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Dashboard") },
+                title = { Text("Панель управления") },
                 actions = {
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Выйти")
                     }
                 }
             )
@@ -52,17 +52,17 @@ fun DashboardScreen(
             if (activeRecord != null) {
                 Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Active Timer", style = MaterialTheme.typography.titleLarge)
-                        Text("Start: ${activeRecord!!.startTime}")
+                        Text("Активный таймер", style = MaterialTheme.typography.titleLarge)
+                        Text("Начало: ${activeRecord!!.startTime}")
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(onClick = { viewModel.stopTimer() }) {
-                            Text("Stop")
+                            Text("Остановить")
                         }
                     }
                 }
             }
 
-            Text("Select Category to Start", style = MaterialTheme.typography.titleMedium)
+            Text("Выберите категорию для начала", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             LazyColumn {
                 items(categories) { category ->
@@ -74,7 +74,7 @@ fun DashboardScreen(
                                 onClick = { viewModel.startTimer(category.id) },
                                 enabled = activeRecord == null
                             ) {
-                                Text("Start")
+                                Text("Старт")
                             }
                         }
                     )

@@ -37,9 +37,9 @@ class AuthViewModel(
             result.onSuccess { user ->
                 sessionManager.login(user.id)
                 _isLoggedIn.value = true
-                _state.value = AuthState.Success("Welcome, ${user.name}")
+                _state.value = AuthState.Success("Добро пожаловать, ${user.name}")
             }.onFailure {
-                _state.value = AuthState.Error(it.message ?: "Login failed")
+                _state.value = AuthState.Error(it.message ?: "Ошибка входа")
             }
         }
     }
@@ -50,9 +50,9 @@ class AuthViewModel(
             val role = if (isAdmin) UserRole.ADMIN else UserRole.USER
             val result = registerUseCase(login, name, pass, role)
             result.onSuccess {
-                _state.value = AuthState.Success("Registration successful. Please login.")
+                _state.value = AuthState.Success("Регистрация успешна. Теперь войдите.")
             }.onFailure {
-                _state.value = AuthState.Error(it.message ?: "Registration failed")
+                _state.value = AuthState.Error(it.message ?: "Ошибка регистрации")
             }
         }
     }

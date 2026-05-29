@@ -37,12 +37,12 @@ fun CategoriesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Categories") }
+                title = { Text("Категории") }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
+                Icon(Icons.Default.Add, contentDescription = "Добавить")
             }
         }
     ) { padding ->
@@ -50,11 +50,11 @@ fun CategoriesScreen(
             items(categories) { category ->
                 ListItem(
                     headlineContent = { Text(category.name) },
-                    supportingContent = { if (category.isDefault) Text("[Base]") else null },
+                    supportingContent = { if (category.isDefault) Text("[Базовая]") else null },
                     leadingContent = { ColorBox(category.colorHex) },
                     trailingContent = {
                         IconButton(onClick = { viewModel.deleteCategory(category) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
                         }
                     }
                 )
@@ -93,17 +93,17 @@ fun AddCategoryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Category") },
+        title = { Text("Добавить категорию") },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text("Название") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Select Color:", style = MaterialTheme.typography.labelLarge)
+                Text("Выберите цвет:", style = MaterialTheme.typography.labelLarge)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 colorPresets.chunked(5).forEach { rowColors ->
@@ -135,19 +135,19 @@ fun AddCategoryDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = isBase, onCheckedChange = { isBase = it })
-                        Text("Base Category")
+                        Text("Базовая категория")
                     }
                 }
             }
         },
         confirmButton = {
             Button(onClick = { onConfirm(name, selectedColor, isBase) }, enabled = name.isNotBlank()) {
-                Text("Add")
+                Text("Добавить")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Отмена")
             }
         }
     )

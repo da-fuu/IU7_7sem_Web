@@ -36,23 +36,23 @@ fun AuthScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = if (isRegisterMode) "Register" else "Login", style = MaterialTheme.typography.headlineMedium)
+        Text(text = if (isRegisterMode) "Регистрация" else "Вход", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(value = login, onValueChange = { login = it }, label = { Text("Login") })
+        OutlinedTextField(value = login, onValueChange = { login = it }, label = { Text("Логин") })
         if (isRegisterMode) {
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Имя") })
         }
         OutlinedTextField(
             value = pass,
             onValueChange = { pass = it },
-            label = { Text("Password") },
+            label = { Text("Пароль") },
             visualTransformation = PasswordVisualTransformation()
         )
         if (isRegisterMode) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = isAdmin, onCheckedChange = { isAdmin = it })
-                Text("Admin")
+                Text("Администратор")
             }
         }
 
@@ -65,11 +65,11 @@ fun AuthScreen(
                 viewModel.login(login, pass)
             }
         }) {
-            Text(if (isRegisterMode) "Register" else "Login")
+            Text(if (isRegisterMode) "Зарегистрироваться" else "Войти")
         }
 
         TextButton(onClick = { isRegisterMode = !isRegisterMode }) {
-            Text(if (isRegisterMode) "Already have an account? Login" else "Don't have an account? Register")
+            Text(if (isRegisterMode) "Уже есть аккаунт? Войти" else "Нет аккаунта? Регистрация")
         }
 
         when (val s = state) {

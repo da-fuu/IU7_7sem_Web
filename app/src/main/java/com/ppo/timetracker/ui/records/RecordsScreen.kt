@@ -34,25 +34,25 @@ fun RecordsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("History") }
+                title = { Text("История") }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Manual")
+                Icon(Icons.Default.Add, contentDescription = "Добавить запись")
             }
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding)) {
             items(records) { record ->
                 val category = categories.find { it.id == record.categoryId }
-                val categoryName = category?.name ?: "Unknown"
+                val categoryName = category?.name ?: "Неизвестно"
                 ListItem(
                     headlineContent = { Text(categoryName) },
                     supportingContent = {
                         Text(
                             "${formatInstant(record.startTime)} - ${
-                                record.endTime?.let { formatInstant(it) } ?: "Active"
+                                record.endTime?.let { formatInstant(it) } ?: "Активно"
                             }\n${record.description}"
                         )
                     },
@@ -100,19 +100,18 @@ fun AddManualRecordDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Manual Record") },
+        title = { Text("Добавить запись") },
         text = {
             Column {
-                // Category Dropdown
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
                 ) {
                     OutlinedTextField(
-                        value = selectedCategory?.name ?: "Select Category",
+                        value = selectedCategory?.name ?: "Выберите категорию",
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Category") },
+                        label = { Text("Категория") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
@@ -140,13 +139,12 @@ fun AddManualRecordDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Start Time Picker
                 Box(modifier = Modifier.fillMaxWidth().clickable { showStartPicker = true }) {
                     OutlinedTextField(
                         value = startDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Start Time") },
+                        label = { Text("Время начала") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = false,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -159,13 +157,12 @@ fun AddManualRecordDialog(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // End Time Picker
                 Box(modifier = Modifier.fillMaxWidth().clickable { showEndPicker = true }) {
                     OutlinedTextField(
                         value = endDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("End Time") },
+                        label = { Text("Время окончания") },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = false,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -181,7 +178,7 @@ fun AddManualRecordDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") },
+                    label = { Text("Описание") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -197,12 +194,12 @@ fun AddManualRecordDialog(
                 },
                 enabled = selectedCategory != null
             ) {
-                Text("Add")
+                Text("Добавить")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Отмена")
             }
         }
     )
@@ -246,12 +243,12 @@ fun DateTimePickerDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
                 TextButton(onClick = { showTimePicker = true }) {
-                    Text("Next")
+                    Text("Далее")
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text("Отмена")
                 }
             }
         ) {
@@ -267,15 +264,15 @@ fun DateTimePickerDialog(
                     val result = LocalDateTime.of(date, LocalTime.of(timePickerState.hour, timePickerState.minute))
                     onConfirm(result)
                 }) {
-                    Text("OK")
+                    Text("ОК")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text("Back")
+                    Text("Назад")
                 }
             },
-            title = { Text("Select Time") },
+            title = { Text("Выберите время") },
             text = {
                 TimePicker(state = timePickerState)
             }
