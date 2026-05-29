@@ -15,11 +15,12 @@ class StopTimerUseCaseTest {
 
     private lateinit var repository: ITimeRecordRepository
     private lateinit var useCase: StopTimerUseCase
+    private val config = BusinessConfig(minDurationMinutes = 1)
 
     @Before
     fun setup() {
         repository = mockk()
-        useCase = StopTimerUseCase(repository)
+        useCase = StopTimerUseCase(repository, config)
     }
 
     @Test
@@ -56,7 +57,7 @@ class StopTimerUseCaseTest {
         val result = useCase(userId, stopTime)
 
         assertTrue(result.isFailure)
-        assertEquals("Сессия менее 1 минуты отменена", result.exceptionOrNull()?.message)
+        assertEquals("Сессия менее установленного лимита отменена", result.exceptionOrNull()?.message)
         coVerify(exactly = 1) { repository.deleteRecord(activeSession.id) }
         coVerify(exactly = 0) { repository.saveRecord(any()) }
     }

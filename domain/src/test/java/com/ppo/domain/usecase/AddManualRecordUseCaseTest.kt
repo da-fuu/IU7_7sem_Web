@@ -1,9 +1,6 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.CategoryId
-import com.ppo.domain.model.RecordId
-import com.ppo.domain.model.TimeRecord
-import com.ppo.domain.model.UserId
+import com.ppo.domain.model.*
 import com.ppo.domain.repository.ITimeRecordRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -20,11 +17,12 @@ class AddManualRecordUseCaseTest {
 
     private lateinit var repository: ITimeRecordRepository
     private lateinit var useCase: AddManualRecordUseCase
+    private val config = BusinessConfig(minDurationMinutes = 1)
 
     @Before
     fun setup() {
         repository = mockk()
-        useCase = AddManualRecordUseCase(repository)
+        useCase = AddManualRecordUseCase(repository, config)
     }
 
     @Test
