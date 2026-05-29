@@ -1,7 +1,6 @@
 package com.ppo.tech_ui
 
 import androidx.room.Room
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ppo.data.PasswordHasherImpl
 import com.ppo.data.db.AppDatabase
 import com.ppo.data.repository.*
@@ -15,8 +14,12 @@ import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.factoryOf
 import org.koin.dsl.module
 import org.koin.core.qualifier.named
-
 import org.slf4j.LoggerFactory
+
+import androidx.sqlite.SQLiteDriver
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+
+import kotlinx.coroutines.runBlocking
 
 fun main(args: Array<String>) {
     val configFile = File("config.properties")
@@ -25,22 +28,41 @@ fun main(args: Array<String>) {
         configFile.inputStream().use { properties.load(it) }
     }
 
-    // Logging config
     val envLogPath = System.getenv("TIMETRACKER_LOG_PATH")
     val propLogPath = properties.getProperty("log.path")
-    val defaultLogPath = "logs/app.log"
-    val logPath = envLogPath ?: propLogPath ?: defaultLogPath
-    System.setProperty("LOG_FILE", logPath)
+    val logPath = envLogPath ?: propLogPath ?: "logs/app.log"
 
     val envLogLevel = System.getenv("TIMETRACKER_LOG_LEVEL")
     val propLogLevel = properties.getProperty("log.level")
-    val defaultLogLevel = "INFO"
-    val logLevel = envLogLevel ?: propLogLevel ?: defaultLogLevel
-    System.setProperty("LOG_LEVEL", logLevel)
+    val logLevel = envLogLevel ?: propLogLevel ?: "INFO"
+
+    try {
+        val logFile = File(logPath)
+        logFile.parentFile?.mkdirs()
+        // Use a FileOutputStream in append mode (true) and wrap it in a PrintStream
+        val logStream = java.io.PrintStream(java.io.FileOutputStream(logFile, true))
+        // Redirect System.err to this file. slf4j-simple will now write to this stream.
+        System.setErr(logStream)
+    } catch (e: Exception) {
+        // Fallback to console if file is not writable
+    }
+
+    System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", logLevel)
+    System.setProperty("org.slf4j.simpleLogger.showDateTime", "true")
+    System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "yyyy-MM-dd HH:mm:ss")
+
+    if (System.getProperty("java.vm.name") == "Dalvik") {
+        try {
+            val libPath = "/data/local/tmp/timetracker/lib/arm64-v8a/libsqliteJni.so"
+            if (File(libPath).exists()) {
+                System.load(libPath)
+            }
+        } catch (e: Throwable) {
+        }
+    }
 
     val logger = LoggerFactory.getLogger("TechUiApp")
     logger.info("Starting TimeTracker CLI with log level: {} and path: {}", logLevel, logPath)
-
     val envDbPath = System.getenv("TIMETRACKER_DB_PATH")
     val propDbPath = properties.getProperty("db.path")
     val defaultDbPath = File(System.getProperty("user.home"), ".timetracker/timetracker.db").absolutePath
@@ -66,8 +88,19 @@ fun main(args: Array<String>) {
         single(named("session_file")) { File(get<File>(named("db_file")).parentFile, "session.txt") }
 
         single {
-            Room.databaseBuilder<AppDatabase>(name = get<File>(named("db_file")).absolutePath)
-                .setDriver(BundledSQLiteDriver())
+            val dbFile = get<File>(named("db_file"))
+            val driver = createSQLiteDriver()
+
+            Room.databaseBuilder<AppDatabase>(
+                name = dbFile.absolutePath,
+                factory = {
+                    Class.forName("com.ppo.data.db.AppDatabase_Impl")
+                        .getDeclaredConstructor()
+                        .newInstance() as AppDatabase
+                }
+            )
+                .setDriver(driver)
+                .fallbackToDestructiveMigration(true)
                 .setQueryCoroutineContext(Dispatchers.IO)
                 .build()
         }
@@ -75,7 +108,6 @@ fun main(args: Array<String>) {
         single { get<AppDatabase>().userDao() }
         single { get<AppDatabase>().categoryDao() }
         single { get<AppDatabase>().timeRecordDao() }
-
         single<IUserRepository> { UserRepositoryImpl(get()) }
         single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
         single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get()) }
@@ -117,8 +149,44 @@ fun main(args: Array<String>) {
         modules(dynamicModule)
     }
 
+    try {
+        val db = koinApp.koin.get<AppDatabase>()
+        runBlocking {
+            db.userDao().findByLogin("dummy")
+        }
+    } catch (e: Exception) {
+    }
+
     val controller = koinApp.koin.get<CliController>()
     controller.handleArgs(args)
 
     koinApp.koin.get<AppDatabase>().close()
+}
+
+fun createSQLiteDriver(): SQLiteDriver {
+    val vmName = System.getProperty("java.vm.name")
+    val isAndroid = vmName == "Dalvik"
+
+    try {
+        val clazz = Class.forName("androidx.sqlite.driver.bundled.BundledSQLiteDriver")
+        return clazz.getDeclaredConstructor().newInstance() as SQLiteDriver
+    } catch (e: Throwable) {
+    }
+
+    if (isAndroid) {
+        val possibleDrivers = listOf(
+            "androidx.sqlite.driver.AndroidSQLiteDriver",
+            "androidx.sqlite.driver.framework.FrameworkSQLiteDriver"
+        )
+
+        for (driverClassName in possibleDrivers) {
+            try {
+                val clazz = Class.forName(driverClassName)
+                return clazz.getDeclaredConstructor().newInstance() as SQLiteDriver
+            } catch (e: Throwable) {
+            }
+        }
+    }
+
+    throw RuntimeException("Could not load any SQLite driver")
 }
