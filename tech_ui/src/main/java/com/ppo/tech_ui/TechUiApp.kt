@@ -30,19 +30,29 @@ fun main(args: Array<String>) {
 
     val envLogPath = System.getenv("TIMETRACKER_LOG_PATH")
     val propLogPath = properties.getProperty("log.path")
-    val logPath = envLogPath ?: propLogPath ?: "logs/app.log"
+    var logPath = envLogPath ?: propLogPath ?: "logs/app.log"
+
+    if (logPath.startsWith("~/")) {
+        logPath = System.getProperty("user.home") + logPath.substring(1)
+    }
+
+    try {
+        val logFile = File(logPath)
+        val parent = logFile.parentFile
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            System.err.println("Error: Не удалось создать директорию для логов по пути ${parent.absolutePath}")
+            return
+        }
+        val logStream = java.io.PrintStream(java.io.FileOutputStream(logFile, true))
+        System.setErr(logStream)
+    } catch (e: Exception) {
+        System.err.println("Error: Не удалось инициализировать файл логов $logPath: ${e.message}")
+        return
+    }
 
     val envLogLevel = System.getenv("TIMETRACKER_LOG_LEVEL")
     val propLogLevel = properties.getProperty("log.level")
     val logLevel = envLogLevel ?: propLogLevel ?: "INFO"
-
-    try {
-        val logFile = File(logPath)
-        logFile.parentFile?.mkdirs()
-        val logStream = java.io.PrintStream(java.io.FileOutputStream(logFile, true))
-        System.setErr(logStream)
-    } catch (e: Exception) {
-    }
 
     System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", logLevel)
     System.setProperty("org.slf4j.simpleLogger.showDateTime", "true")
