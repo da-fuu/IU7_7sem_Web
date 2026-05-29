@@ -21,7 +21,7 @@ class StopTimerUseCase(
         val updatedSession = activeSession.copy(endTime = stopTime)
 
         return if (updatedSession.getDurationMinutes() < config.minDurationMinutes) {
-            logger.info(
+            logger.warn(
                 "Session for user {} is too short ({} min), deleting.",
                 userId.value,
                 updatedSession.getDurationMinutes()
