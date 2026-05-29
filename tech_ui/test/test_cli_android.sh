@@ -4,7 +4,7 @@ rm -rf db/database.db*
 
 export CLASSPATH="/data/local/tmp/timetracker/timetracker-dex.jar"
 
-APP_CMD="app_process -Dslf4j.provider=org.slf4j.simple.SimpleServiceProvider /data/local/tmp/timetracker com.ppo.tech_ui.TechUiAppKt"
+APP_CMD="dalvikvm -Dslf4j.provider=org.slf4j.simple.SimpleServiceProvider -cp /data/local/tmp/timetracker/timetracker-dex.jar com.ppo.tech_ui.TechUiAppKt"
 
 $APP_CMD register admin Administrator secret ADMIN
 $APP_CMD login admin secret

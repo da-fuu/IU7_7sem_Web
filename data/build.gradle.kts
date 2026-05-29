@@ -4,6 +4,17 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
 tasks.jar {
     manifest {
         attributes["Module-Name"] = "com.ppo.data"

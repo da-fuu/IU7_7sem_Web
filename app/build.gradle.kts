@@ -36,6 +36,16 @@ android {
     }
 }
 
+afterEvaluate {
+    val copyDebugApk = tasks.register<Copy>("copyDebugApk") {
+        from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
+        into(rootProject.layout.projectDirectory.dir("dist"))
+        rename { "timetracker.apk" }
+    }
+
+    tasks.findByName("assembleDebug")?.finalizedBy(copyDebugApk)
+}
+
 dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
