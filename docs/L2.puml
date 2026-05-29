@@ -1,15 +1,21 @@
 @startuml
 !include <c4/C4_Container.puml>
 
-Person(user, "Пользователь / Админ", "Пользователи мобильного приложения")
+Person(user, "Пользователь / Админ", "Пользователи системы")
 
-System_Boundary(sms, "TimeTracker") {
+System_Boundary(time_tracker_system, "Система TimeTracker") {
 
-    Container(mobile_app, "Android Приложение", "Kotlin, Jetpack Compose", "Обеспечивает графический интерфейс, обрабатывает ввод, содержит ядро бизнес-логики (проверка пересечений, таймер) и формирует отчеты.")
-    ContainerDb(local_db, "Локальная БД", "SQLite (Room ORM)", "Хранит категории, логи времени и настройки локально на устройстве пользователя.")
+    Container(app, "Android Приложение (App)", "Kotlin, Jetpack Compose", "Обеспечивает графический интерфейс для мобильных устройств.")
+
+    Container(tech_ui, "Технологический UI (CLI)", "Kotlin JVM", "Обеспечивает консольный интерфейс для управления системой на ПК и Android.")
+
+    ContainerDb(local_db, "Локальная БД", "SQLite (Room)", "Хранит категории, записи времени и настройки пользователя.")
 }
 
-Rel(user, mobile_app, "Взаимодействует с экранами приложения", "Touch UI")
-Rel(mobile_app, local_db, "Читает и записывает данные", "SQL / Room DAO")
+Rel(user, app, "Взаимодействует с экранами", "Touch UI")
+Rel(user, tech_ui, "Вводит команды", "CLI / Bash")
+
+Rel(app, local_db, "Читает и записывает данные", "SQL / Room")
+Rel(tech_ui, local_db, "Читает и записывает данные", "SQL / Room")
 
 @enduml

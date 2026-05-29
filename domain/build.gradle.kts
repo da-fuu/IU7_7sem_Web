@@ -15,11 +15,13 @@ kotlin {
 }
 
 tasks.jar {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    manifest {
+        attributes["Module-Name"] = "com.ppo.domain"
+    }
 }
 
 dependencies {
+    implementation(libs.slf4j.api)
     implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

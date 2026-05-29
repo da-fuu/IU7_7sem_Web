@@ -5,13 +5,14 @@ plugins {
 }
 
 tasks.jar {
-    dependsOn(":domain:jar")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    manifest {
+        attributes["Module-Name"] = "com.ppo.data"
+    }
 }
 
 dependencies {
     implementation(project(":domain"))
+    implementation(libs.slf4j.api)
     implementation(libs.androidx.room.runtime)
     implementation(libs.kotlinx.coroutines.core)
     ksp(libs.androidx.room.compiler)

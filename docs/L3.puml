@@ -1,26 +1,28 @@
 @startuml
 !include <c4/C4_Component.puml>
 
-
-Person(user, "Пользователь", "Взаимодействует с экраном устройства")
+Person(user, "Пользователь", "Взаимодействует с CLI или Android UI")
 
 ContainerDb(local_db, "Локальная БД", "SQLite (Room)", "Хранение данных")
 
-Container_Boundary(app_container, "TimeTracker") {
+Container_Boundary(app_container, "Система TimeTracker") {
 
-    Component(ui, "Компонент реализации UI", "Jetpack Compose, ViewModels", "Отвечает за отрисовку экранов (MVVM) и передачу намерений пользователя в слой бизнес-логики.")
+    Component(app, "Компонент App (Android)", "Jetpack Compose, ViewModels", "Графический интерфейс для мобильных устройств.")
 
-    Component(domain, "Компонент бизнес-логики", "Kotlin UseCases", "Содержит правила валидации, подсчет времени и абстрактные интерфейсы репозиториев.")
+    Component(tech_ui, "Компонент Tech UI (CLI)", "Kotlin JVM, SLF4J-Simple", "Интерфейс командной строки для JVM и Android (app_process).")
 
-    Component(data, "Компонент доступа к данным", "Repository Pattern, Room DAO", "Реализует интерфейсы из слоя бизнес-логики. Отвечает за маппинг транспортных Entity в доменные модели и работу с СУБД.")
+    Component(domain, "Компонент бизнес-логики", "Kotlin UseCases, Entities", "Ядро системы: правила, валидация, интерфейсы.")
+
+    Component(data, "Компонент доступа к данным", "Repository Pattern, Room DAO", "Доступ к данным, маппинг, реализация интерфейсов репозиториев.")
 }
 
-Rel(user, ui, "Нажимает кнопки, вводит данные", "Touch UI")
+Rel(user, app, "Нажимает кнопки", "Touch UI")
+Rel(user, tech_ui, "Вводит команды", "CLI / Bash")
 
-Rel(ui, domain, "Вызывает сценарии (Use Cases) и подписывается на данные", "Kotlin Flow")
+Rel(app, domain, "Вызывает сценарии (Use Cases)", "Kotlin Flow / Coroutines")
+Rel(tech_ui, domain, "Вызывает сценарии (Use Cases)", "Blocking / Coroutines")
 
 Rel(data, domain, "Реализует интерфейсы репозиториев", "Implements")
-
-Rel(data, local_db, "Выполняет SQL-запросы", "Room ORM")
+Rel(data, local_db, "Выполняет SQL-запросы", "Room KMP / SQLite")
 
 @enduml

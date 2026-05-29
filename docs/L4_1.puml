@@ -32,6 +32,10 @@ package "Бизнес-логика" #E8F5E9 {
         + getDurationMinutes(): Long
     }
 
+    class BusinessConfig <<Model>> {
+        - minDurationMinutes: Long
+    }
+
     interface IUserRepository <<Interface>> {
         + suspend findByLogin(login: String): User?
         + suspend saveUser(user: User): Result<Unit>
@@ -58,7 +62,7 @@ package "Бизнес-логика" #E8F5E9 {
         + verify(raw: String, hashed: String): Boolean
     }
 
-    package "Use Cases" #FFFFFF {
+    package "Сценарии (Use Cases)" #FFFFFF {
         class RegisterUserUseCase <<UseCase>>
         class LoginUserUseCase <<UseCase>>
         class StartTimerUseCase <<UseCase>>
@@ -84,8 +88,14 @@ package "Бизнес-логика" #E8F5E9 {
 
     StartTimerUseCase o--> ITimeRecordRepository
     StopTimerUseCase o--> ITimeRecordRepository
+    StopTimerUseCase o--> BusinessConfig
+
     AddManualRecordUseCase o--> ITimeRecordRepository
+    AddManualRecordUseCase o--> BusinessConfig
+
     EditTimeRecordUseCase o--> ITimeRecordRepository
+    EditTimeRecordUseCase o--> BusinessConfig
+
     GetTimeRecordsUseCase o--> ITimeRecordRepository
 
     GetCategoriesUseCase o--> ICategoryRepository
