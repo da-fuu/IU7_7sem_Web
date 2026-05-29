@@ -43,6 +43,11 @@ package "Доступ к данным" #FFF3E0 {
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
     }
 
+    interface SQLiteDriver <<Interface>> #LightGray
+
+    class BundledSQLiteDriver <<Драйвер>> #FFE0B2
+    class FrameworkSQLiteDriver <<Драйвер>> #FFE0B2
+
     TimeRecordRepositoryImpl ..|> ITimeRecordRepository
     TimeRecordRepositoryImpl o--> TimeRecordDao
     TimeRecordRepositoryImpl o--> TimeRecordMapper
@@ -51,6 +56,10 @@ package "Доступ к данным" #FFF3E0 {
     TimeRecordDao ..> TimeRecordEntity
     TimeRecordMapper ..> TimeRecordEntity
     TimeRecordMapper ..> TimeRecord
+
+    AppDatabase ..> SQLiteDriver : "использует через setDriver()"
+    SQLiteDriver <|.. BundledSQLiteDriver
+    SQLiteDriver <|.. FrameworkSQLiteDriver
 }
 
 @enduml
