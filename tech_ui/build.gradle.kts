@@ -31,12 +31,15 @@ tasks.jar {
 
     from(sourceSets.main.get().output)
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}
 
-    val distDir = project.rootDir.resolve("dist")
-    doLast {
-        val outputFile = archiveFile.get().asFile
-        outputFile.copyTo(File(distDir, outputFile.name), overwrite = true)
-    }
+val copyJar = tasks.register<Copy>("copyJar") {
+    from(tasks.jar.map { it.archiveFile })
+    into(rootProject.layout.projectDirectory.dir("dist"))
+}
+
+tasks.jar {
+    finalizedBy(copyJar)
 }
 
 val extractNativeLibs = tasks.register<Copy>("extractNativeLibs") {
@@ -143,7 +146,7 @@ tasks.register<Exec>("dex") {
 
     val sdkDir = File(sdkDirStr)
     val distDir = project.rootDir.resolve("dist")
-    val outputJar = distDir.resolve("timetracker-dex.jar")
+    val outputJar = distDir.resolve("tech_ui_dex.jar")
     val dexInputsDirProvider = collectDexInputs.map { it.outputs.files.singleFile }
 
     inputs.dir(collectDexInputs.map { it.outputs.files.singleFile })
