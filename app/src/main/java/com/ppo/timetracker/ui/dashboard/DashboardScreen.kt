@@ -1,5 +1,6 @@
 package com.ppo.timetracker.ui.dashboard
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ppo.timetracker.ui.theme.ColorBox
 import org.koin.androidx.compose.koinViewModel
@@ -21,8 +23,7 @@ fun DashboardScreen(
     val categories by viewModel.categories.collectAsState()
     val activeRecord by viewModel.activeRecord.collectAsState()
     val error by viewModel.error.collectAsState()
-
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.refreshData()
@@ -30,7 +31,7 @@ fun DashboardScreen(
 
     LaunchedEffect(error) {
         error?.let {
-            snackbarHostState.showSnackbar(it)
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.clearError()
         }
     }
@@ -45,8 +46,7 @@ fun DashboardScreen(
                     }
                 }
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
             if (activeRecord != null) {

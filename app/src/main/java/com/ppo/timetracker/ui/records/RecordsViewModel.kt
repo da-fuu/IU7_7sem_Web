@@ -32,6 +32,9 @@ class RecordsViewModel(
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     fun refresh() {
         val userId = sessionManager.currentUserId ?: return
         viewModelScope.launch {
@@ -51,15 +54,27 @@ class RecordsViewModel(
                 endTime = end,
                 description = desc
             )
-            addManualRecordUseCase(record)
-            refresh()
+            val result = addManualRecordUseCase(record)
+            result.onSuccess {
+                refresh()
+            }.onFailure {
+                _error.value = it.message ?: "Ошибка при сохранении записи"
+            }
         }
     }
 
     fun editRecord(record: TimeRecord) {
         viewModelScope.launch {
-            editTimeRecordUseCase(record)
-            refresh()
+            val result = editTimeRecordUseCase(record)
+            result.onSuccess {
+                refresh()
+            }.onFailure {
+                _error.value = it.message ?: "Ошибка при редактировании записи"
+            }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }

@@ -48,6 +48,8 @@ class DashboardViewModel(
             val result = startTimerUseCase(userId, categoryId, Instant.now())
             if (result.isSuccess) {
                 refreshData()
+            } else {
+                _error.value = result.exceptionOrNull()?.message ?: "Ошибка при запуске таймера"
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.ppo.timetracker.ui.categories
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ppo.timetracker.ui.theme.ColorBox
 import org.koin.androidx.compose.koinViewModel
@@ -27,11 +29,20 @@ fun CategoriesScreen(
 ) {
     val categories by viewModel.categories.collectAsState()
     val isAdmin by viewModel.isAdmin.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val context = LocalContext.current
 
     var showAddDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
+    }
+
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
     }
 
     Scaffold(
