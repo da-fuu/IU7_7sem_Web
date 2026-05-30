@@ -128,6 +128,7 @@ class TimeTrackerApp : Application() {
 
                 factoryOf(::RegisterUserUseCase)
                 factoryOf(::LoginUserUseCase)
+                factoryOf(::GetUserInfoUseCase)
                 factoryOf(::StartTimerUseCase)
                 factoryOf(::StopTimerUseCase)
                 factoryOf(::AddManualRecordUseCase)
@@ -139,7 +140,7 @@ class TimeTrackerApp : Application() {
                 factoryOf(::AdminDeleteBaseCategoryUseCase)
                 factoryOf(::EditTimeRecordUseCase)
 
-                factory { AuthViewModel(get(), get(), get()) }
+                factory { AuthViewModel(get(), get(), get(), get()) }
                 factory { DashboardViewModel(get(), get(), get(), get(), get()) }
                 factory { CategoriesViewModel(get(), get(), get(), get(), get(), get(), get()) }
                 factory { RecordsViewModel(get(), get(), get(), get(), get()) }
