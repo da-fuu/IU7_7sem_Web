@@ -30,6 +30,9 @@ class CategoriesViewModel(
     private val _isAdmin = MutableStateFlow(false)
     val isAdmin: StateFlow<Boolean> = _isAdmin.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     fun refresh() {
         val userId = sessionManager.currentUserId ?: return
         viewModelScope.launch {
@@ -48,24 +51,36 @@ class CategoriesViewModel(
                 colorHex = colorHex,
                 isDefault = isDefault
             )
-            if (isDefault) {
+            val result = if (isDefault) {
                 adminManageBaseCategoryUseCase(category, userId)
             } else {
                 manageUserCategoryUseCase(category)
             }
-            refresh()
+            result.onSuccess {
+                refresh()
+            }.onFailure {
+                _error.value = it.message ?: "Ошибка при добавлении категории"
+            }
         }
     }
 
     fun deleteCategory(category: Category) {
         val userId = sessionManager.currentUserId ?: return
         viewModelScope.launch {
-            if (category.isDefault) {
+            val result = if (category.isDefault) {
                 adminDeleteBaseCategoryUseCase(category.id, userId)
             } else {
                 deleteCategoryUseCase(category.id)
             }
-            refresh()
+            result.onSuccess {
+                refresh()
+            }.onFailure {
+                _error.value = it.message ?: "Ошибка при удалении категории"
+            }
         }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }

@@ -3,7 +3,7 @@ set -e
 
 ./gradlew :tech_ui:dex
 
-adb push dist/timetracker-dex.jar /data/local/tmp/timetracker/
+adb push dist/tech_ui_dex.jar /data/local/tmp/timetracker/
 adb push dist/lib /data/local/tmp/timetracker/
 adb push config.properties /data/local/tmp/timetracker/
 adb push tech_ui/test/test_cli_android.sh /data/local/tmp/timetracker/

@@ -3,17 +3,17 @@
 
 Person(user, "Пользователь / Админ", "Пользователи системы")
 
-System_Boundary(time_tracker_system, "Система TimeTracker") {
+System_Boundary(time_tracker_system, "TimeTracker") {
 
     Container(app, "Android Приложение (App)", "Kotlin, Jetpack Compose", "Обеспечивает графический интерфейс для мобильных устройств.")
 
-    Container(tech_ui, "Технологический UI (CLI)", "Kotlin JVM", "Обеспечивает консольный интерфейс для управления системой на ПК и Android.")
+    Container(tech_ui, "Технологический UI (CLI)", "Kotlin JVM", "Обеспечивает консольный интерфейс на ПК и Android.")
 
     ContainerDb(local_db, "Локальная БД", "SQLite (Room)", "Хранит категории, записи времени и настройки пользователя.")
 }
 
-Rel(user, app, "Взаимодействует с экранами", "Touch UI")
-Rel(user, tech_ui, "Вводит команды", "CLI / Bash")
+Rel(user, app, "Взаимодействует с GUI", "Android UI")
+Rel(user, tech_ui, "Вводит команды", "CLI")
 
 Rel(app, local_db, "Читает и записывает данные", "SQL / Room")
 Rel(tech_ui, local_db, "Читает и записывает данные", "SQL / Room")

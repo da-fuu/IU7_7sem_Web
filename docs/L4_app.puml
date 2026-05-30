@@ -1,0 +1,95 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+
+package "Графический интерфейс" #E3F2FD {
+
+    package "UI" #FFFFFF {
+        class MainActivity <<Activity>>
+        class AuthScreen <<Composable>>
+        class DashboardScreen <<Composable>>
+        class CategoriesScreen <<Composable>>
+        class RecordsScreen <<Composable>>
+    }
+
+    package "ViewModels" #FFFFFF {
+        class AuthViewModel <<ViewModel>> {
+            + state: StateFlow<AuthState>
+            + isLoggedIn: StateFlow<Boolean>
+            + userName: StateFlow<String?>
+            + login(login, pass)
+            + register(login, name, pass)
+            + logout()
+        }
+
+        class DashboardViewModel <<ViewModel>> {
+            + categories: StateFlow<List<Category>>
+            + activeRecord: StateFlow<TimeRecord?>
+            + startTimer(categoryId)
+            + stopTimer()
+        }
+
+        class CategoriesViewModel <<ViewModel>> {
+            + categories: StateFlow<List<Category>>
+            + isAdmin: StateFlow<Boolean>
+            + addCategory(name, color, isBase)
+            + deleteCategory(category)
+        }
+
+        class RecordsViewModel <<ViewModel>> {
+            + records: StateFlow<List<TimeRecord>>
+            + categories: StateFlow<List<Category>>
+            + addManualRecord(catId, start, end, desc)
+        }
+    }
+
+    package "Session" #FFFFFF {
+        class SessionManager <<Manager>> {
+            + currentUserIdFlow: Flow<UserId?>
+            + currentUserId: UserId?
+            + login(userId)
+            + logout()
+        }
+    }
+
+    MainActivity ..> AuthScreen
+    MainActivity ..> DashboardScreen
+    MainActivity ..> CategoriesScreen
+    MainActivity ..> RecordsScreen
+
+    AuthScreen ..> AuthViewModel
+    DashboardScreen ..> DashboardViewModel
+    CategoriesScreen ..> CategoriesViewModel
+    RecordsScreen ..> RecordsViewModel
+
+    AuthViewModel o--> SessionManager
+    DashboardViewModel o--> SessionManager
+    CategoriesViewModel o--> SessionManager
+    RecordsViewModel o--> SessionManager
+
+    package "Domain" <<External>> #LightGray {
+        class LoginUserUseCase
+        class RegisterUserUseCase
+        class GetUserInfoUseCase
+        class StartTimerUseCase
+        class StopTimerUseCase
+        class GetCategoriesUseCase
+        class GetTimeRecordsUseCase
+    }
+
+    AuthViewModel --> LoginUserUseCase
+    AuthViewModel --> RegisterUserUseCase
+    AuthViewModel --> GetUserInfoUseCase
+
+    DashboardViewModel --> StartTimerUseCase
+    DashboardViewModel --> StopTimerUseCase
+    DashboardViewModel --> GetCategoriesUseCase
+
+    CategoriesViewModel --> GetCategoriesUseCase
+
+    RecordsViewModel --> GetTimeRecordsUseCase
+}
+
+@enduml

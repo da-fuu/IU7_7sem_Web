@@ -94,9 +94,11 @@
 
 ## 14. Раскрытие проекта на уровне L4 нотации С4
 
-![L4_1](docs/L4_1.svg)
+![L4_domain](docs/L4_domain.svg)
 
-![L4_2](docs/L4_2.svg)
+![L4_data](docs/L4_data.svg)
+
+![L4_app](docs/L4_app.svg)
 
 ## 15. UML-диаграммы последовательностей
 

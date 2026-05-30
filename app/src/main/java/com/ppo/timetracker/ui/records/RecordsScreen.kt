@@ -1,14 +1,21 @@
 package com.ppo.timetracker.ui.records
 
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ppo.domain.model.CategoryId
 import com.ppo.timetracker.ui.theme.ColorBox
@@ -17,13 +24,14 @@ import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecordsScreen(
     viewModel: RecordsViewModel = koinViewModel()
 ) {
     val records by viewModel.records.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val context = LocalContext.current
 
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -31,34 +39,64 @@ fun RecordsScreen(
         viewModel.refresh()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("История") }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Добавить запись")
-            }
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
         }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
             items(records) { record ->
                 val category = categories.find { it.id == record.categoryId }
                 val categoryName = category?.name ?: "Неизвестно"
-                ListItem(
-                    headlineContent = { Text(categoryName) },
-                    supportingContent = {
-                        Text(
-                            "${formatInstant(record.startTime)} - ${
+                
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ColorBox(category?.colorHex ?: "#808080")
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = categoryName,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            val timeRange = "${formatInstant(record.startTime)} - ${
                                 record.endTime?.let { formatInstant(it) } ?: "Активно"
-                            }\n${record.description}"
-                        )
-                    },
-                    leadingContent = { ColorBox(category?.colorHex ?: "#808080") }
-                )
+                            }"
+                            Text(
+                                text = if (record.description.isNotBlank()) {
+                                    "$timeRange\n${record.description}"
+                                } else {
+                                    timeRange
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
             }
+        }
+
+        FloatingActionButton(
+            onClick = { showAddDialog = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Добавить запись")
         }
 
         if (showAddDialog) {
@@ -97,12 +135,13 @@ fun AddManualRecordDialog(
     var showEndPicker by remember { mutableStateOf(false) }
 
     var expanded by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Добавить запись") },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(scrollState)) {
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }
@@ -113,11 +152,12 @@ fun AddManualRecordDialog(
                         readOnly = true,
                         label = { Text("Категория") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable).fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.heightIn(max = 280.dp)
                     ) {
                         categories.forEach { category ->
                             DropdownMenuItem(

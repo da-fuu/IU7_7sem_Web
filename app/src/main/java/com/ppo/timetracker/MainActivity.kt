@@ -11,14 +11,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -41,6 +47,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
@@ -73,20 +80,58 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = koinViewModel()
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val userName by authViewModel.userName.collectAsState()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val currentRoute = currentDestination?.route
 
-    val showBottomBar = isLoggedIn && currentDestination?.route != "auth"
+    val showBars = isLoggedIn && currentRoute != "auth"
 
     Scaffold(
+        topBar = {
+            if (showBars) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            when (currentRoute) {
+                                "dashboard" -> "Панель управления"
+                                "categories" -> "Категории"
+                                "records" -> "История"
+                                else -> "TimeTracker"
+                            }
+                        )
+                    },
+                    actions = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            userName?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+                            IconButton(onClick = {
+                                authViewModel.logout()
+                                navController.navigate("auth") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }) {
+                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Выйти")
+                            }
+                        }
+                    }
+                )
+            }
+        },
         bottomBar = {
-            if (showBottomBar) {
+            if (showBars) {
                 NavigationBar {
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Home, contentDescription = "Главная") },
@@ -128,33 +173,30 @@ fun MainContent() {
             }
         }
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = if (isLoggedIn) "dashboard" else "auth",
-            modifier = Modifier.padding(innerPadding)
+        Surface(
+            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
         ) {
-            composable("auth") {
-                AuthScreen(onLoginSuccess = {
-                    navController.navigate("dashboard") {
-                        popUpTo("auth") { inclusive = true }
-                    }
-                })
-            }
-            composable("dashboard") {
-                DashboardScreen(
-                    onLogout = {
-                        authViewModel.logout()
-                        navController.navigate("auth") {
-                            popUpTo(0) { inclusive = true }
+            NavHost(
+                navController = navController,
+                startDestination = if (isLoggedIn) "dashboard" else "auth"
+            ) {
+                composable("auth") {
+                    AuthScreen(onLoginSuccess = {
+                        navController.navigate("dashboard") {
+                            popUpTo("auth") { inclusive = true }
                         }
-                    }
-                )
-            }
-            composable("categories") {
-                CategoriesScreen()
-            }
-            composable("records") {
-                RecordsScreen()
+                    })
+                }
+                composable("dashboard") {
+                    DashboardScreen()
+                }
+                composable("categories") {
+                    CategoriesScreen()
+                }
+                composable("records") {
+                    RecordsScreen()
+                }
             }
         }
     }

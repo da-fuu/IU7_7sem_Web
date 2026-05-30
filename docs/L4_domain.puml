@@ -40,6 +40,7 @@ package "Бизнес-логика" #E8F5E9 {
         + suspend findByLogin(login: String): User?
         + suspend saveUser(user: User): Result<Unit>
         + suspend getUserRole(userId: UserId): UserRole?
+        + suspend getUserById(userId: UserId): User?
     }
 
     interface ITimeRecordRepository <<Interface>> {
@@ -62,9 +63,10 @@ package "Бизнес-логика" #E8F5E9 {
         + verify(raw: String, hashed: String): Boolean
     }
 
-    package "Сценарии (Use Cases)" #FFFFFF {
+    package "Сценарии" #FFFFFF {
         class RegisterUserUseCase <<UseCase>>
         class LoginUserUseCase <<UseCase>>
+        class GetUserInfoUseCase <<UseCase>>
         class StartTimerUseCase <<UseCase>>
         class StopTimerUseCase <<UseCase>>
         class AddManualRecordUseCase <<UseCase>>
@@ -85,6 +87,7 @@ package "Бизнес-логика" #E8F5E9 {
     RegisterUserUseCase o--> IPasswordHasher
     LoginUserUseCase o--> IUserRepository
     LoginUserUseCase o--> IPasswordHasher
+    GetUserInfoUseCase o--> IUserRepository
 
     StartTimerUseCase o--> ITimeRecordRepository
     StopTimerUseCase o--> ITimeRecordRepository

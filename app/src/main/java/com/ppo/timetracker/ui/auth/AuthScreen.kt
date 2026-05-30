@@ -1,10 +1,12 @@
 package com.ppo.timetracker.ui.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import org.koin.androidx.compose.koinViewModel
@@ -22,10 +24,17 @@ fun AuthScreen(
 
     val state by viewModel.state.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn) {
             onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(state) {
+        if (state is AuthState.Error) {
+            Toast.makeText(context, (state as AuthState.Error).message, Toast.LENGTH_SHORT).show()
         }
     }
 

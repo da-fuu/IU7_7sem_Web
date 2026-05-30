@@ -5,19 +5,19 @@ Person(user, "Пользователь", "Взаимодействует с CLI 
 
 ContainerDb(local_db, "Локальная БД", "SQLite (Room)", "Хранение данных")
 
-Container_Boundary(app_container, "Система TimeTracker") {
+Container_Boundary(app_container, "TimeTracker") {
 
-    Component(app, "Компонент App (Android)", "Jetpack Compose, ViewModels", "Графический интерфейс для мобильных устройств.")
+    Component(app, "Компонент App (Android)", "Jetpack Compose", "Графический интерфейс для мобильных устройств.")
 
-    Component(tech_ui, "Компонент Tech UI (CLI)", "Kotlin JVM, SLF4J-Simple", "Интерфейс командной строки для JVM и Android (app_process).")
+    Component(tech_ui, "Компонент Tech UI (CLI)", "Kotlin JVM", "Интерфейс командной строки для JVM и Android.")
 
-    Component(domain, "Компонент бизнес-логики", "Kotlin UseCases, Entities", "Ядро системы: правила, валидация, интерфейсы.")
+    Component(domain, "Компонент бизнес-логики", "Kotlin UseCases, Entities", "Содержит правила валидации и подсчет времени.")
 
     Component(data, "Компонент доступа к данным", "Repository Pattern, Room DAO", "Доступ к данным, маппинг, реализация интерфейсов репозиториев.")
 }
 
 Rel(user, app, "Нажимает кнопки", "Touch UI")
-Rel(user, tech_ui, "Вводит команды", "CLI / Bash")
+Rel(user, tech_ui, "Вводит команды", "CLI")
 
 Rel(app, domain, "Вызывает сценарии (Use Cases)", "Kotlin Flow / Coroutines")
 Rel(tech_ui, domain, "Вызывает сценарии (Use Cases)", "Blocking / Coroutines")

@@ -45,8 +45,8 @@ package "Доступ к данным" #FFF3E0 {
 
     interface SQLiteDriver <<Interface>> #LightGray
 
-    class BundledSQLiteDriver <<Драйвер>> #FFE0B2
-    class FrameworkSQLiteDriver <<Драйвер>> #FFE0B2
+    class BundledSQLiteDriver <<Driver>> #FFE0B2
+    class FrameworkSQLiteDriver <<Driver>> #FFE0B2
 
     TimeRecordRepositoryImpl ..|> ITimeRecordRepository
     TimeRecordRepositoryImpl o--> TimeRecordDao
@@ -57,7 +57,7 @@ package "Доступ к данным" #FFF3E0 {
     TimeRecordMapper ..> TimeRecordEntity
     TimeRecordMapper ..> TimeRecord
 
-    AppDatabase ..> SQLiteDriver : "использует через setDriver()"
+    AppDatabase ..> SQLiteDriver
     SQLiteDriver <|.. BundledSQLiteDriver
     SQLiteDriver <|.. FrameworkSQLiteDriver
 }

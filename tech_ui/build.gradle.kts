@@ -1,10 +1,23 @@
+import java.io.File
+
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    alias(libs.plugins.jetbrains.kotlin.jvm)
     application
 }
 
 application {
     mainClass.set("com.ppo.tech_ui.TechUiAppKt")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
 }
 
 tasks.jar {
@@ -21,15 +34,34 @@ tasks.jar {
 }
 
 val copyJar = tasks.register<Copy>("copyJar") {
-    from(tasks.jar.get().archiveFile)
-    into("${project.rootDir}/dist")
+    from(tasks.jar.map { it.archiveFile })
+    into(rootProject.layout.projectDirectory.dir("dist"))
 }
 
-tasks.assembleDist {
-    dependsOn(copyJar)
+tasks.jar {
+    finalizedBy(copyJar)
 }
-tasks.register<Jar>("fatJar") {
-    dependsOn("jar")
+
+val extractNativeLibs = tasks.register<Copy>("extractNativeLibs") {
+    val distDir = project.rootDir.resolve("dist")
+    val nativeLibsDir = distDir.resolve("lib/arm64-v8a")
+
+    androidDex.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
+        if (artifact.file.name.contains("sqlite-bundled")) {
+            from(zipTree(artifact.file)) {
+                include("**/*.so")
+                eachFile {
+                    if (path.contains("arm64-v8a")) {
+                        path = name
+                    } else {
+                        exclude()
+                    }
+                }
+                includeEmptyDirs = false
+            }
+        }
+    }
+    into(nativeLibsDir)
 }
 
 dependencies {
@@ -37,7 +69,7 @@ dependencies {
     implementation(project(":data"))
     implementation(libs.slf4j.api)
     implementation(libs.slf4j.simple)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.room.runtime)
     implementation(libs.sqlite.bundled)
     implementation(libs.koin.core)
@@ -52,38 +84,56 @@ val androidDex: Configuration by configurations.creating {
     }
 }
 
+val dexRuntimeClasspath by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    extendsFrom(configurations.runtimeClasspath.get())
+    exclude(group = "androidx.sqlite")
+    exclude(group = "org.jetbrains", module = "annotations")
+}
+
 dependencies {
     androidDex("androidx.sqlite:sqlite-framework-android:${libs.versions.sqlite.get()}")
     androidDex("androidx.sqlite:sqlite-bundled-android:${libs.versions.sqlite.get()}")
     androidDex("androidx.sqlite:sqlite-android:${libs.versions.sqlite.get()}")
-    androidDex("androidx.sqlite:sqlite-framework:${libs.versions.sqlite.get()}")
 }
 
-tasks.register<Jar>("dexJar") {
-    group = "build"
-    description = "Assembles a JAR for dexing"
-    archiveClassifier.set("dex-input")
+val thinJar = tasks.register<Jar>("thinJar") {
+    from(sourceSets.main.get().output)
+    archiveClassifier.set("thin")
+}
+
+val collectDexInputs = tasks.register<Sync>("collectDexInputs") {
+    dependsOn(thinJar, ":domain:jar", ":data:jar")
+
+    into(project.layout.buildDirectory.dir("dex-inputs"))
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
-    androidDex.resolvedConfiguration.resolvedArtifacts.forEach { artifact ->
-        if (artifact.extension == "aar") {
-            from(zipTree(artifact.file).matching { include("classes.jar") }.map { zipTree(it) })
-        } else {
-            from(zipTree(artifact.file))
-        }
+    from(thinJar.map { it.archiveFile })
+
+    from(dexRuntimeClasspath) {
+        include { it.name.endsWith(".jar") && !it.name.contains("sqlite") && !it.name.contains("annotations") }
     }
 
-    from(sourceSets.main.get().output)
-
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    androidDex.files.forEach { file ->
+        if (file.extension == "aar") {
+            from(zipTree(file)) {
+                include("classes.jar")
+                rename { "${file.nameWithoutExtension}-classes.jar" }
+            }
+        } else if (file.extension == "jar") {
+            from(file)
+        }
+    }
 }
-tasks.register<Exec>("dex") {
-    dependsOn("dexJar")
-    group = "build"
-    description = "Dex the JAR and extract native libs"
 
-    val sdkDir = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT") ?: run {
-        val localProperties = file("${project.rootDir}/local.properties")
+tasks.register<Exec>("dex") {
+    dependsOn(collectDexInputs, extractNativeLibs)
+    group = "build"
+    description = "Dex the JARs"
+
+    val sdkDirStr = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT") ?: run {
+        val localProperties = project.rootDir.resolve("local.properties")
         if (localProperties.exists()) {
             localProperties.readLines()
                 .find { it.startsWith("sdk.dir=") }
@@ -92,53 +142,38 @@ tasks.register<Exec>("dex") {
         } else {
             null
         }
-    }
+    } ?: throw GradleException("Android SDK not found")
 
-    val distDir = file("${project.rootDir}/dist")
-    val outputJar = file("${distDir}/timetracker-dex.jar")
-    val inputJar = tasks.named<Jar>("dexJar").get().archiveFile.get().asFile
+    val sdkDir = File(sdkDirStr)
+    val distDir = project.rootDir.resolve("dist")
+    val outputJar = distDir.resolve("tech_ui_dex.jar")
+    val dexInputsDirProvider = collectDexInputs.map { it.outputs.files.singleFile }
+
+    inputs.dir(collectDexInputs.map { it.outputs.files.singleFile })
+    outputs.file(outputJar)
+    outputs.dir(distDir.resolve("lib"))
+
+    val d8 = sdkDir.resolve("build-tools").listFiles()?.filter { it.isDirectory }?.maxByOrNull { it.name }?.let { it.resolve("d8") }
+    val androidJar = sdkDir.resolve("platforms").listFiles()?.filter { it.isDirectory && it.name.startsWith("android-") }?.maxByOrNull { it.name.removePrefix("android-").toIntOrNull() ?: 0 }?.let { it.resolve("android.jar") }
+
+    if (d8 == null || !d8.exists()) throw GradleException("d8 not found")
+    if (androidJar == null || !androidJar.exists()) throw GradleException("android.jar not found")
 
     doFirst {
-        if (sdkDir == null) throw GradleException("Android SDK not found")
-        distDir.mkdirs()
-
-        val nativeLibsDir = file("${distDir}/lib/arm64-v8a")
-        nativeLibsDir.mkdirs()
-
-        androidDex.files.forEach { file ->
-            if (file.name.contains("sqlite-bundled")) {
-                copy {
-                    from(zipTree(file))
-                    into(nativeLibsDir)
-                    include("**/*.so")
-                    eachFile {
-                        if (path.contains("arm64-v8a")) {
-                            path = name
-                        } else {
-                            exclude()
-                        }
-                    }
-                    includeEmptyDirs = false
-                }
-            }
-        }
-
-        val d8 = file("$sdkDir/build-tools/").listFiles()?.filter { it.isDirectory }?.maxByOrNull { it.name }?.let { file("${it.absolutePath}/d8") }
-        val androidJar = file("$sdkDir/platforms/").listFiles()?.filter { it.isDirectory && it.name.startsWith("android-") }?.maxByOrNull { it.name.removePrefix("android-").toIntOrNull() ?: 0 }?.let { file("${it.absolutePath}/android.jar") }
-
-        if (d8 == null || !d8.exists()) throw GradleException("d8 not found")
-        if (androidJar == null || !androidJar.exists()) throw GradleException("android.jar not found")
+        val dexInputsDir = dexInputsDirProvider.get()
+        val allInputs = dexInputsDir.listFiles()?.filter { file ->
+            val name = file.name
+            !name.contains("sqlite-jvm") &&
+            !name.contains("sqlite-framework-2")
+        }?.map { it.absolutePath } ?: emptyList()
 
         commandLine(
             d8.absolutePath,
-            "--min-api", "26",
+            "--min-api", "29",
             "--lib", androidJar.absolutePath,
+            "--release",
             "--output", outputJar.absolutePath,
-            inputJar.absolutePath
+            *allInputs.toTypedArray()
         )
     }
-
-    inputs.file(inputJar)
-    outputs.file(outputJar)
-    outputs.dir("${distDir}/lib")
 }

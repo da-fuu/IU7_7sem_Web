@@ -37,4 +37,8 @@ class UserRepositoryImpl(
     override suspend fun getUserRole(userId: UserId): UserRole? = withContext(Dispatchers.IO) {
         userDao.getUserRole(userId.value.toString())
     }
+
+    override suspend fun getUserById(userId: UserId): User? = withContext(Dispatchers.IO) {
+        userDao.findById(userId.value.toString())?.toDomain()
+    }
 }
