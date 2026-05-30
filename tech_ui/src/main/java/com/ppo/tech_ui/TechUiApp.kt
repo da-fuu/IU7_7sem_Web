@@ -122,6 +122,7 @@ fun main(args: Array<String>) {
 
         factoryOf(::RegisterUserUseCase)
         factoryOf(::LoginUserUseCase)
+        factoryOf(::GetUserInfoUseCase)
         factoryOf(::StartTimerUseCase)
         factoryOf(::StopTimerUseCase)
         factoryOf(::AddManualRecordUseCase)
