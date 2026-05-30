@@ -1,6 +1,6 @@
 plugins {
-    id("org.jetbrains.kotlin.jvm")
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.jetbrains.kotlin.jvm)
+    alias(libs.plugins.google.ksp)
     alias(libs.plugins.androidx.room)
 }
 

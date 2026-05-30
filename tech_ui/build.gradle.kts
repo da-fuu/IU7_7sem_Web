@@ -1,7 +1,7 @@
 import java.io.File
 
 plugins {
-    id("org.jetbrains.kotlin.jvm")
+    alias(libs.plugins.jetbrains.kotlin.jvm)
     application
 }
 
@@ -66,7 +66,7 @@ dependencies {
     implementation(project(":data"))
     implementation(libs.slf4j.api)
     implementation(libs.slf4j.simple)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.room.runtime)
     implementation(libs.sqlite.bundled)
     implementation(libs.koin.core)
@@ -160,14 +160,13 @@ tasks.register<Exec>("dex") {
         val dexInputsDir = dexInputsDirProvider.get()
         val allInputs = dexInputsDir.listFiles()?.filter { file ->
             val name = file.name
-            // Remove previous exclusions as versions are now forced and consistent
             !name.contains("sqlite-jvm") &&
             !name.contains("sqlite-framework-2")
         }?.map { it.absolutePath } ?: emptyList()
 
         commandLine(
             d8.absolutePath,
-            "--min-api", "26",
+            "--min-api", "29",
             "--lib", androidJar.absolutePath,
             "--release",
             "--output", outputJar.absolutePath,
