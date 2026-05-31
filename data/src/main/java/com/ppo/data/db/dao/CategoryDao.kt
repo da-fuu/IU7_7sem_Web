@@ -15,7 +15,7 @@ interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(category: CategoryEntity): Long
 
-    @Query("SELECT * FROM categories WHERE (user_id = :userId OR (user_id IS NULL AND :userId IS NULL)) AND name = :name LIMIT 1")
+    @Query("SELECT * FROM categories WHERE (user_id = :userId OR isDefault = 1) AND name = :name LIMIT 1")
     suspend fun findByName(userId: String?, name: String): CategoryEntity?
 
     @Query("DELETE FROM categories WHERE uid = :uid")

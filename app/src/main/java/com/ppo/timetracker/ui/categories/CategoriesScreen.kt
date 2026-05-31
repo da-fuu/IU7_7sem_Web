@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ppo.timetracker.ui.theme.ColorBox
 import org.koin.androidx.compose.koinViewModel
+import androidx.core.graphics.toColorInt
 
 @Composable
 fun CategoriesScreen(
@@ -122,7 +122,7 @@ fun AddCategoryDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         rowColors.forEach { colorHex ->
-                            val color = Color(android.graphics.Color.parseColor(colorHex))
+                            val color = Color(colorHex.toColorInt())
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)

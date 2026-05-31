@@ -153,8 +153,8 @@ tasks.register<Exec>("dex") {
     outputs.file(outputJar)
     outputs.dir(distDir.resolve("lib"))
 
-    val d8 = sdkDir.resolve("build-tools").listFiles()?.filter { it.isDirectory }?.maxByOrNull { it.name }?.let { it.resolve("d8") }
-    val androidJar = sdkDir.resolve("platforms").listFiles()?.filter { it.isDirectory && it.name.startsWith("android-") }?.maxByOrNull { it.name.removePrefix("android-").toIntOrNull() ?: 0 }?.let { it.resolve("android.jar") }
+    val d8 = sdkDir.resolve("build-tools").listFiles()?.filter { it.isDirectory }?.maxByOrNull { it.name }?.resolve("d8")
+    val androidJar = sdkDir.resolve("platforms").listFiles()?.filter { it.isDirectory && it.name.startsWith("android-") }?.maxByOrNull { it.name.removePrefix("android-").toIntOrNull() ?: 0 }?.resolve("android.jar")
 
     if (d8 == null || !d8.exists()) throw GradleException("d8 not found")
     if (androidJar == null || !androidJar.exists()) throw GradleException("android.jar not found")

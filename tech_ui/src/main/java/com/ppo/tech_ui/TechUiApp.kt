@@ -17,7 +17,6 @@ import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
 
 import androidx.sqlite.SQLiteDriver
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
 import kotlinx.coroutines.runBlocking
 
@@ -78,7 +77,8 @@ fun main(args: Array<String>) {
     val envMinDuration = System.getenv("TIMETRACKER_MIN_DURATION")
     val propMinDuration = properties.getProperty("min.duration.minutes")
     val defaultMinDuration = "1"
-    val minDuration = (envMinDuration ?: propMinDuration ?: defaultMinDuration).toLong()
+    val minDurationStr = envMinDuration ?: propMinDuration ?: defaultMinDuration
+    val minDuration = minDurationStr.toLongOrNull() ?: 1L
 
     val businessConfig = BusinessConfig(minDurationMinutes = minDuration)
 

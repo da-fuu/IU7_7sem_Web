@@ -2,7 +2,6 @@ package com.ppo.timetracker
 
 import android.Manifest
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -38,6 +37,7 @@ import com.ppo.timetracker.ui.dashboard.DashboardScreen
 import com.ppo.timetracker.ui.records.RecordsScreen
 import com.ppo.timetracker.ui.theme.TimeTrackerTheme
 import org.koin.androidx.compose.koinViewModel
+import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
 
@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                     intent.addCategory("android.intent.category.DEFAULT")
-                    intent.data = Uri.parse("package:$packageName")
+                    intent.data = "package:$packageName".toUri()
                     startActivity(intent)
                 } catch (e: Exception) {
                     val intent = Intent()
