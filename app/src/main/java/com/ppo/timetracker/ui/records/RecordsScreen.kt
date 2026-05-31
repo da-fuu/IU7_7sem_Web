@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +21,6 @@ import com.ppo.timetracker.ui.theme.ColorBox
 import org.koin.androidx.compose.koinViewModel
 import java.time.*
 import java.time.format.DateTimeFormatter
-import java.util.*
 
 @Composable
 fun RecordsScreen(
@@ -268,10 +266,10 @@ fun DateTimePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalDateTime) -> Unit
 ) {
-    var datePickerState = rememberDatePickerState(
+    val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = initialDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     )
-    var timePickerState = rememberTimePickerState(
+    val timePickerState = rememberTimePickerState(
         initialHour = initialDateTime.hour,
         initialMinute = initialDateTime.minute
     )

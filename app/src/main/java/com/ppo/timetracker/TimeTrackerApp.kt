@@ -93,7 +93,8 @@ class TimeTrackerApp : Application() {
             return
         }
 
-        val minDuration = properties.getProperty("min.duration.minutes", "1").toLong()
+        val minDurationStr = properties.getProperty("min.duration.minutes", "1")
+        val minDuration = minDurationStr.toLongOrNull() ?: 1L
         val businessConfig = BusinessConfig(minDurationMinutes = minDuration)
 
         startKoin {
@@ -105,7 +106,7 @@ class TimeTrackerApp : Application() {
 
                 single {
                     val file = get<File>(named("db_file"))
-                    Room.databaseBuilder<AppDatabase>(
+                    Room.databaseBuilder(
                         androidContext(),
                         AppDatabase::class.java,
                         file.absolutePath
