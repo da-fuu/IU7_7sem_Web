@@ -27,6 +27,14 @@ Table time_records {
   description text [not null]
 }
 
+Table time_record_history {
+  uid varchar(36) [primary key]
+  record_id varchar(36) [not null]
+  description text [not null]
+  modified_at integer [not null]
+}
+
 Ref: categories.user_id > users.uid [delete: cascade, update: cascade]
 Ref: time_records.user_id > users.uid [delete: cascade, update: cascade]
 Ref: time_records.category_id > categories.uid [delete: cascade, update: cascade]
+Ref: time_record_history.record_id > time_records.uid [delete: cascade, update: cascade]

@@ -4,6 +4,7 @@ skinparam linetype ortho
 
 interface "Domain::ITimeRecordRepository" as ITimeRecordRepository <<Interface>> #LightGray
 class "Domain::TimeRecord" as TimeRecord <<Entity>> #LightGray
+class "Domain::DescriptionVersion" as DescriptionVersion <<Entity>> #LightGray
 
 package "Доступ к данным" #FFF3E0 {
     class TimeRecordEntity <<Database Entity>> {
@@ -15,31 +16,52 @@ package "Доступ к данным" #FFF3E0 {
         - description: String
     }
 
+    class TimeRecordHistoryEntity <<Database Entity>> {
+        - uid: String
+        - record_id: String
+        - description: String
+        - modified_at: Instant
+    }
+
     interface TimeRecordDao <<Room DAO>> {
         + suspend insert(entity: TimeRecordEntity): Long
+        + suspend update(entity: TimeRecordEntity): Int
+        + suspend getById(recordId: String): TimeRecordEntity?
         + suspend findOverlapping(...): List<TimeRecordEntity>
         + suspend getActiveSession(userId: String): TimeRecordEntity?
         + suspend getAllByUserId(userId: String): List<TimeRecordEntity>
         + suspend deleteById(recordId: String): Int
     }
 
+    interface TimeRecordHistoryDao <<Room DAO>> {
+        + suspend insert(entity: TimeRecordHistoryEntity)
+        + suspend getByRecordId(recordId: String): List<TimeRecordHistoryEntity>
+    }
+
     abstract class AppDatabase <<RoomDatabase>> {
         + userDao(): UserDao
         + categoryDao(): CategoryDao
         + timeRecordDao(): TimeRecordDao
+        + timeRecordHistoryDao(): TimeRecordHistoryDao
     }
 
     class TimeRecordMapper <<Mapper>> {
         + toDomain(entity: TimeRecordEntity): TimeRecord
         + toEntity(domain: TimeRecord): TimeRecordEntity
+        + historyToDomain(entity: TimeRecordHistoryEntity): DescriptionVersion
+        + historyToEntity(domain: DescriptionVersion): TimeRecordHistoryEntity
     }
 
     class TimeRecordRepositoryImpl <<Repository>> {
         - dao: TimeRecordDao
+        - historyDao: TimeRecordHistoryDao
         + suspend saveRecord(record: TimeRecord): Result<Unit>
+        + suspend getRecordById(recordId: RecordId): TimeRecord?
         + suspend getOverlappingRecords(...): List<TimeRecord>
         + suspend getActiveSession(userId: UserId): TimeRecord?
         + suspend getTimeRecords(userId: UserId): List<TimeRecord>
+        + suspend getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
+        + suspend addDescriptionVersion(version: DescriptionVersion): Result<Unit>
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
     }
 
@@ -50,12 +72,17 @@ package "Доступ к данным" #FFF3E0 {
 
     TimeRecordRepositoryImpl ..|> ITimeRecordRepository
     TimeRecordRepositoryImpl o--> TimeRecordDao
+    TimeRecordRepositoryImpl o--> TimeRecordHistoryDao
     TimeRecordRepositoryImpl o--> TimeRecordMapper
     AppDatabase *--> TimeRecordDao
+    AppDatabase *--> TimeRecordHistoryDao
 
     TimeRecordDao ..> TimeRecordEntity
+    TimeRecordHistoryDao ..> TimeRecordHistoryEntity
     TimeRecordMapper ..> TimeRecordEntity
+    TimeRecordMapper ..> TimeRecordHistoryEntity
     TimeRecordMapper ..> TimeRecord
+    TimeRecordMapper ..> DescriptionVersion
 
     AppDatabase ..> SQLiteDriver
     SQLiteDriver <|.. BundledSQLiteDriver

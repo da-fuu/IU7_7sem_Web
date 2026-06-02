@@ -11,8 +11,10 @@ rectangle "TimeTracker" {
   usecase "Войти" as UC_Login
   usecase "Запустить/остановить таймер" as UC_Timer
   usecase "Добавить запись времени вручную" as UC_Manual
-  usecase "Редактировать/удалить свою запись" as UC_EditRecord
   usecase "Управлять личными категориями" as UC_ManageOwnCategories
+  usecase "Изменить описание записи" as UC_UpdateDesc
+  usecase "Просмотреть историю описаний" as UC_ViewHistory
+  usecase "Откатить описание к версии" as UC_RollbackDesc
 
   usecase "Управлять базовыми категориями" as UC_ManageDefaultCategories
 }
@@ -21,8 +23,10 @@ user --> UC_Register
 user --> UC_Login
 user --> UC_Timer
 user --> UC_Manual
-user --> UC_EditRecord
 user --> UC_ManageOwnCategories
+user --> UC_UpdateDesc
+user --> UC_ViewHistory
+user --> UC_RollbackDesc
 
 admin --> UC_ManageDefaultCategories
 
