@@ -132,7 +132,6 @@ fun main(args: Array<String>) {
         factoryOf(::GetTimeRecordsUseCase)
         factoryOf(::DeleteCategoryUseCase)
         factoryOf(::AdminDeleteBaseCategoryUseCase)
-        factoryOf(::EditTimeRecordUseCase)
 
         single {
             CliController(

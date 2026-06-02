@@ -7,7 +7,6 @@ import com.ppo.domain.model.CategoryId
 import com.ppo.domain.model.RecordId
 import com.ppo.domain.model.TimeRecord
 import com.ppo.domain.usecase.AddManualRecordUseCase
-import com.ppo.domain.usecase.EditTimeRecordUseCase
 import com.ppo.domain.usecase.GetCategoriesUseCase
 import com.ppo.domain.usecase.GetTimeRecordsUseCase
 import com.ppo.timetracker.session.SessionManager
@@ -22,7 +21,6 @@ class RecordsViewModel(
     private val getTimeRecordsUseCase: GetTimeRecordsUseCase,
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val addManualRecordUseCase: AddManualRecordUseCase,
-    private val editTimeRecordUseCase: EditTimeRecordUseCase,
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
@@ -59,17 +57,6 @@ class RecordsViewModel(
                 refresh()
             }.onFailure {
                 _error.value = it.message ?: "Ошибка при сохранении записи"
-            }
-        }
-    }
-
-    fun editRecord(record: TimeRecord) {
-        viewModelScope.launch {
-            val result = editTimeRecordUseCase(record)
-            result.onSuccess {
-                refresh()
-            }.onFailure {
-                _error.value = it.message ?: "Ошибка при редактировании записи"
             }
         }
     }
