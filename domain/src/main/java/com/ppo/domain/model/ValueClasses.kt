@@ -10,3 +10,6 @@ value class CategoryId(val value: UUID)
 
 @JvmInline
 value class RecordId(val value: UUID)
+
+@JvmInline
+value class VersionId(val value: UUID)

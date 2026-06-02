@@ -22,7 +22,10 @@ class CliController(
     private val getCategoriesUseCase: GetCategoriesUseCase,
     private val getTimeRecordsUseCase: GetTimeRecordsUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
-    private val adminDeleteBaseCategoryUseCase: AdminDeleteBaseCategoryUseCase
+    private val adminDeleteBaseCategoryUseCase: AdminDeleteBaseCategoryUseCase,
+    private val updateRecordDescriptionUseCase: UpdateRecordDescriptionUseCase,
+    private val rollbackRecordDescriptionUseCase: RollbackRecordDescriptionUseCase,
+    private val getDescriptionHistoryUseCase: GetDescriptionHistoryUseCase
 ) {
     private val logger = LoggerFactory.getLogger(CliController::class.java)
 
@@ -49,6 +52,9 @@ class CliController(
                     "create-base-category" -> handleCreateBaseCategory(args.drop(1))
                     "delete-category" -> handleDeleteCategory(args.drop(1))
                     "delete-base-category" -> handleDeleteBaseCategory(args.drop(1))
+                    "update-desc" -> handleUpdateDescription(args.drop(1))
+                    "desc-history" -> handleGetDescriptionHistory(args.drop(1))
+                    "rollback-desc" -> handleRollbackDescription(args.drop(1))
                     else -> {
                         logger.warn("Unknown command received: {}", command)
                         println("Unknown command")
@@ -221,6 +227,49 @@ class CliController(
             .onFailure { println("Error: ${it.message}") }
     }
 
+    private suspend fun handleUpdateDescription(args: List<String>) {
+        getAuthenticatedUserOrNull() ?: return
+        if (args.size < 2) {
+            println("Usage: update-desc <record_uuid> <new_description>")
+            return
+        }
+        val recordId = RecordId(UUID.fromString(args[0]))
+        val result = updateRecordDescriptionUseCase(recordId, args[1])
+        result.onSuccess { println("Success: Description updated") }
+            .onFailure { println("Error: ${it.message}") }
+    }
+
+    private suspend fun handleGetDescriptionHistory(args: List<String>) {
+        getAuthenticatedUserOrNull() ?: return
+        if (args.isEmpty()) {
+            println("Usage: desc-history <record_uuid>")
+            return
+        }
+        val recordId = RecordId(UUID.fromString(args[0]))
+        val result = getDescriptionHistoryUseCase(recordId)
+        result.onSuccess { history ->
+            if (history.isEmpty()) {
+                println("No history found for this record")
+            } else {
+                println("=== Description History ===")
+                history.forEach { println("${it.id.value} | ${it.modifiedAt} | ${it.description}") }
+            }
+        }.onFailure { println("Error: ${it.message}") }
+    }
+
+    private suspend fun handleRollbackDescription(args: List<String>) {
+        getAuthenticatedUserOrNull() ?: return
+        if (args.size < 2) {
+            println("Usage: rollback-desc <record_uuid> <version_uuid>")
+            return
+        }
+        val recordId = RecordId(UUID.fromString(args[0]))
+        val versionId = VersionId(UUID.fromString(args[1]))
+        val result = rollbackRecordDescriptionUseCase(recordId, versionId)
+        result.onSuccess { println("Success: Rolled back to version ${versionId.value}") }
+            .onFailure { println("Error: ${it.message}") }
+    }
+
     private suspend fun getAuthenticatedUserOrNull(): UserId? {
         if (!sessionFile.exists()) {
             println("Error: Authentication required")
@@ -254,6 +303,9 @@ class CliController(
               create-base-category <name> <color_hex>
               delete-category <category_uuid>
               delete-base-category <category_uuid>
+              update-desc <record_uuid> <new_description>
+              desc-history <record_uuid>
+              rollback-desc <record_uuid> <version_uuid>
         """.trimIndent()
         )
     }

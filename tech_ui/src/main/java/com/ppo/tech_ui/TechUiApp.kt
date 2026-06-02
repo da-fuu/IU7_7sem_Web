@@ -115,9 +115,10 @@ fun main(args: Array<String>) {
         single { get<AppDatabase>().userDao() }
         single { get<AppDatabase>().categoryDao() }
         single { get<AppDatabase>().timeRecordDao() }
+        single { get<AppDatabase>().timeRecordHistoryDao() }
         single<IUserRepository> { UserRepositoryImpl(get()) }
         single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
-        single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get()) }
+        single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get(), get()) }
         single<IPasswordHasher> { PasswordHasherImpl() }
 
         factoryOf(::RegisterUserUseCase)
@@ -132,6 +133,9 @@ fun main(args: Array<String>) {
         factoryOf(::GetTimeRecordsUseCase)
         factoryOf(::DeleteCategoryUseCase)
         factoryOf(::AdminDeleteBaseCategoryUseCase)
+        factoryOf(::UpdateRecordDescriptionUseCase)
+        factoryOf(::RollbackRecordDescriptionUseCase)
+        factoryOf(::GetDescriptionHistoryUseCase)
 
         single {
             CliController(
@@ -147,7 +151,10 @@ fun main(args: Array<String>) {
                 getCategoriesUseCase = get(),
                 getTimeRecordsUseCase = get(),
                 deleteCategoryUseCase = get(),
-                adminDeleteBaseCategoryUseCase = get()
+                adminDeleteBaseCategoryUseCase = get(),
+                updateRecordDescriptionUseCase = get(),
+                rollbackRecordDescriptionUseCase = get(),
+                getDescriptionHistoryUseCase = get()
             )
         }
     }

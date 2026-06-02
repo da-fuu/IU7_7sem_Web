@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ppo.domain.model.CategoryId
+import com.ppo.domain.model.DescriptionVersion
+import com.ppo.domain.model.RecordId
+import com.ppo.domain.model.VersionId
 import com.ppo.timetracker.ui.theme.ColorBox
 import org.koin.androidx.compose.koinViewModel
 import java.time.*
@@ -28,6 +32,8 @@ fun RecordsScreen(
 ) {
     val records by viewModel.records.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val historyList by viewModel.historyList.collectAsState()
+    val selectedRecordIdForHistory by viewModel.selectedRecordIdForHistory.collectAsState()
     val error by viewModel.error.collectAsState()
     val context = LocalContext.current
 
@@ -63,10 +69,16 @@ fun RecordsScreen(
                         ColorBox(category?.colorHex ?: "#808080")
                         Spacer(modifier = Modifier.width(16.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = categoryName,
-                                style = MaterialTheme.typography.titleMedium
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = categoryName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(onClick = { viewModel.loadHistory(record.id) }) {
+                                    Icon(Icons.Default.History, contentDescription = "История описаний")
+                                }
+                            }
                             val timeRange = "${formatInstant(record.startTime)} - ${
                                 record.endTime?.let { formatInstant(it) } ?: "Активно"
                             }"
@@ -107,7 +119,85 @@ fun RecordsScreen(
                 }
             )
         }
+
+        selectedRecordIdForHistory?.let { recordId ->
+            val currentRecord = records.find { it.id == recordId }
+            DescriptionHistoryDialog(
+                currentDescription = currentRecord?.description ?: "",
+                history = historyList,
+                onDismiss = { viewModel.closeHistory() },
+                onUpdate = { newDesc -> viewModel.updateDescription(recordId, newDesc) },
+                onRollback = { versionId -> viewModel.rollbackDescription(recordId, versionId) }
+            )
+        }
     }
+}
+
+@Composable
+fun DescriptionHistoryDialog(
+    currentDescription: String,
+    history: List<DescriptionVersion>,
+    onDismiss: () -> Unit,
+    onUpdate: (String) -> Unit,
+    onRollback: (VersionId) -> Unit
+) {
+    var newDescription by remember(currentDescription) { mutableStateOf(currentDescription) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("История описаний") },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = newDescription,
+                    onValueChange = { newDescription = it },
+                    label = { Text("Новое описание") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { onUpdate(newDescription) },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Обновить")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Прошлые версии:", style = MaterialTheme.typography.titleSmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                if (history.isEmpty()) {
+                    Text("История пуста", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                        items(history) { version ->
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Text(
+                                    text = formatInstant(version.modifiedAt),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = version.description.ifBlank { "(без описания)" },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                TextButton(
+                                    onClick = { onRollback(version.id) },
+                                    modifier = Modifier.align(Alignment.End)
+                                ) {
+                                    Text("Восстановить")
+                                }
+                                HorizontalDivider(thickness = 0.5.dp)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Закрыть")
+            }
+        }
+    )
 }
 
 private fun formatInstant(instant: Instant): String {

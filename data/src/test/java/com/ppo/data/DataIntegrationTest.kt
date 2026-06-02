@@ -39,7 +39,7 @@ class DataIntegrationTest {
 
         userRepository = UserRepositoryImpl(db.userDao())
         categoryRepository = CategoryRepositoryImpl(db.categoryDao())
-        timeRecordRepository = TimeRecordRepositoryImpl(db.timeRecordDao())
+        timeRecordRepository = TimeRecordRepositoryImpl(db.timeRecordDao(), db.timeRecordHistoryDao())
     }
 
     @After
