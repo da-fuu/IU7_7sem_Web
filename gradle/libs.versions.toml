@@ -1,4 +1,5 @@
 [versions]
+objectbox = "5.4.2"
 agp = "9.2.1"
 coreKtx = "1.18.0"
 junit = "4.13.2"
@@ -19,6 +20,8 @@ navigation = "2.9.8"
 splashscreen = "1.2.0"
 
 [libraries]
+io-objectbox-android = { group = "io.objectbox", name = "objectbox-android", version.ref = "objectbox" }
+io-objectbox-kotlin = { group = "io.objectbox", name = "objectbox-kotlin", version.ref = "objectbox" }
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { group = "org.slf4j", name = "slf4j-simple", version.ref = "slf4j" }
 
@@ -52,6 +55,7 @@ koin-compose = { group = "io.insert-koin", name = "koin-androidx-compose", versi
 androidx-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 
 [plugins]
+objectbox = { id = "io.objectbox", version.ref = "objectbox" }
 
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -60,3 +64,4 @@ jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin"
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 google-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
+android-legacy-kapt = { id = "com.android.legacy-kapt", version.ref = "agp" }
