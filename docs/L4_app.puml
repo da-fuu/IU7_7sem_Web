@@ -10,6 +10,7 @@ package "Графический интерфейс" #E3F2FD {
         class DashboardScreen <<Composable>>
         class CategoriesScreen <<Composable>>
         class RecordsScreen <<Composable>>
+        class MigrationScreen <<Composable>>
     }
 
     package "ViewModels" #FFFFFF {
@@ -46,6 +47,16 @@ package "Графический интерфейс" #E3F2FD {
             + updateDescription(recordId, newDesc)
             + rollbackDescription(recordId, versionId)
         }
+
+        class MigrationViewModel <<ViewModel>> {
+            + migrationState: StateFlow<MigrationState>
+        }
+    }
+
+    package "Migration" #FFFFFF {
+        class MigrationManager <<Manager>> {
+            + suspend checkAndMigrate(): MigrationState
+        }
     }
 
     package "Session" #FFFFFF {
@@ -61,16 +72,26 @@ package "Графический интерфейс" #E3F2FD {
     MainActivity ..> DashboardScreen
     MainActivity ..> CategoriesScreen
     MainActivity ..> RecordsScreen
+    MainActivity ..> MigrationScreen
 
     AuthScreen ..> AuthViewModel
     DashboardScreen ..> DashboardViewModel
     CategoriesScreen ..> CategoriesViewModel
     RecordsScreen ..> RecordsViewModel
+    MigrationScreen ..> MigrationViewModel
 
     AuthViewModel o--> SessionManager
     DashboardViewModel o--> SessionManager
     CategoriesViewModel o--> SessionManager
     RecordsViewModel o--> SessionManager
+
+    MigrationViewModel --> MigrationManager
+
+    package "Migration Domain" <<External>> #LightGray {
+        class DataMigrationUseCase
+    }
+
+    MigrationManager --> DataMigrationUseCase
 
     package "Domain" <<External>> #LightGray {
         class LoginUserUseCase

@@ -63,6 +63,7 @@ package "Доступ к данным" #FFF3E0 {
         + suspend getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
         + suspend addDescriptionVersion(version: DescriptionVersion): Result<Unit>
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
+        + suspend getAllTimeRecords(): List<TimeRecord>
     }
 
     interface SQLiteDriver <<Interface>> #LightGray

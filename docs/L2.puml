@@ -9,13 +9,13 @@ System_Boundary(time_tracker_system, "TimeTracker") {
 
     Container(tech_ui, "Технологический UI (CLI)", "Kotlin JVM", "Обеспечивает консольный интерфейс на ПК и Android.")
 
-    ContainerDb(local_db, "Локальная БД", "SQLite (Room)", "Хранит категории, записи времени и настройки пользователя.")
+    ContainerDb(local_db, "Локальная БД", "SQLite (Room), ObjectBox", "Хранит категории, записи времени и настройки пользователя.")
 }
 
 Rel(user, app, "Взаимодействует с GUI", "Android UI")
 Rel(user, tech_ui, "Вводит команды", "CLI")
 
-Rel(app, local_db, "Читает и записывает данные", "SQL / Room")
+Rel(app, local_db, "Читает и записывает данные", "ObjectBox / Room")
 Rel(tech_ui, local_db, "Читает и записывает данные", "SQL / Room")
 
 @enduml
