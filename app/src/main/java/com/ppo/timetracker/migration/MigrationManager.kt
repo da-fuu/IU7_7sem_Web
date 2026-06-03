@@ -21,15 +21,15 @@ class MigrationManager(
 
     suspend fun checkAndMigrate(): MigrationState = withContext(Dispatchers.IO) {
         val oldDbFile = File(oldDbPath)
-        val backupFile = File("$oldDbPath.backup")
+        val markerFile = File(oldDbFile.parent, "migration_done.txt")
 
         if (!oldDbFile.exists()) {
             logger.info("Old DB not found. Migration not needed.")
             return@withContext MigrationState.NOT_NEEDED
         }
 
-        if (backupFile.exists()) {
-            logger.info("Backup file exists. Migration already performed.")
+        if (markerFile.exists()) {
+            logger.info("Migration marker file exists. Migration already performed.")
             return@withContext MigrationState.NOT_NEEDED
         }
 
@@ -37,13 +37,12 @@ class MigrationManager(
         val result = migrationUseCase.migrate()
 
         if (result.isSuccess) {
-            logger.info("Migration successful. Renaming old DB to backup.")
-            val renameSuccess = oldDbFile.renameTo(backupFile)
-            if (!renameSuccess) {
-                logger.error("Failed to rename old DB file.")
+            logger.info("Migration successful. Creating marker file.")
+            try {
+                markerFile.createNewFile()
+            } catch (e: Exception) {
+                logger.error("Failed to create migration marker file", e)
             }
-            File("$oldDbPath-wal").renameTo(File("$oldDbPath.backup-wal"))
-            File("$oldDbPath-shm").renameTo(File("$oldDbPath.backup-shm"))
 
             MigrationState.SUCCESS
         } else {
