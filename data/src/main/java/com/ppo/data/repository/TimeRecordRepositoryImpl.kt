@@ -85,4 +85,8 @@ class TimeRecordRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun getAllTimeRecords(): List<TimeRecord> = withContext(Dispatchers.IO) {
+        timeRecordDao.getAll().map { it.toDomain() }
+    }
 }

@@ -46,4 +46,7 @@ interface TimeRecordDao {
 
     @Query("DELETE FROM time_records WHERE uid = :recordId")
     suspend fun deleteById(recordId: String): Int
+
+    @Query("SELECT * FROM time_records")
+    suspend fun getAll(): List<TimeRecordEntity>
 }

@@ -49,4 +49,8 @@ class CategoryRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun getAllCategories(): List<Category> = withContext(Dispatchers.IO) {
+        categoryDao.getAll().map { it.toDomain() }
+    }
 }

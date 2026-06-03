@@ -41,4 +41,8 @@ class UserRepositoryImpl(
     override suspend fun getUserById(userId: UserId): User? = withContext(Dispatchers.IO) {
         userDao.findById(userId.value.toString())?.toDomain()
     }
+
+    override suspend fun getAllUsers(): List<User> = withContext(Dispatchers.IO) {
+        userDao.getAll().map { it.toDomain() }
+    }
 }
