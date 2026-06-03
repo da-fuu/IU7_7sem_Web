@@ -35,6 +35,8 @@ import com.ppo.timetracker.ui.auth.AuthViewModel
 import com.ppo.timetracker.ui.categories.CategoriesScreen
 import com.ppo.timetracker.ui.dashboard.DashboardScreen
 import com.ppo.timetracker.ui.records.RecordsScreen
+import com.ppo.timetracker.ui.migration.MigrationScreen
+import com.ppo.timetracker.ui.migration.MigrationViewModel
 import com.ppo.timetracker.ui.theme.TimeTrackerTheme
 import org.koin.androidx.compose.koinViewModel
 import androidx.core.net.toUri
@@ -92,7 +94,7 @@ fun MainContent() {
     val currentDestination = navBackStackEntry?.destination
     val currentRoute = currentDestination?.route
 
-    val showBars = isLoggedIn && currentRoute != "auth"
+    val showBars = isLoggedIn && currentRoute != "auth" && currentRoute != "migration"
 
     Scaffold(
         topBar = {
@@ -179,8 +181,20 @@ fun MainContent() {
         ) {
             NavHost(
                 navController = navController,
-                startDestination = if (isLoggedIn) "dashboard" else "auth"
+                startDestination = "migration"
             ) {
+                composable("migration") {
+                    val migrationViewModel: MigrationViewModel = koinViewModel()
+                    MigrationScreen(
+                        viewModel = migrationViewModel,
+                        onMigrationFinished = {
+                            val nextDest = if (isLoggedIn) "dashboard" else "auth"
+                            navController.navigate(nextDest) {
+                                popUpTo("migration") { inclusive = true }
+                            }
+                        }
+                    )
+                }
                 composable("auth") {
                     AuthScreen(onLoginSuccess = {
                         navController.navigate("dashboard") {

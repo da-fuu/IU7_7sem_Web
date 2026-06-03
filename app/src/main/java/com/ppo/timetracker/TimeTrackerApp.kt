@@ -21,6 +21,13 @@ import com.ppo.timetracker.ui.auth.AuthViewModel
 import com.ppo.timetracker.ui.categories.CategoriesViewModel
 import com.ppo.timetracker.ui.dashboard.DashboardViewModel
 import com.ppo.timetracker.ui.records.RecordsViewModel
+import com.ppo.data_objectbox.entity.MyObjectBox
+import com.ppo.data_objectbox.repository.CategoryRepositoryObjectBoxImpl
+import com.ppo.data_objectbox.repository.TimeRecordRepositoryObjectBoxImpl
+import com.ppo.data_objectbox.repository.UserRepositoryObjectBoxImpl
+import com.ppo.migration.DataMigrationUseCase
+import com.ppo.timetracker.migration.MigrationManager
+import com.ppo.timetracker.ui.migration.MigrationViewModel
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -93,6 +100,17 @@ class TimeTrackerApp : Application() {
             return
         }
 
+        val objectBoxPathStr = properties.getProperty("objectbox.path", "db/objectbox")
+        val objectBoxFile = resolvePath(baseDir, objectBoxPathStr)
+        try {
+            if (!objectBoxFile.exists()) {
+                objectBoxFile.mkdirs()
+            }
+        } catch (e: Exception) {
+            handleFatalError("Ошибка подготовки ObjectBox БД: ${e.message}")
+            return
+        }
+
         val minDurationStr = properties.getProperty("min.duration.minutes", "1")
         val minDuration = minDurationStr.toLongOrNull() ?: 1L
         val businessConfig = BusinessConfig(minDurationMinutes = minDuration)
@@ -117,16 +135,43 @@ class TimeTrackerApp : Application() {
                         .build()
                 }
 
+                single {
+                    MyObjectBox.builder().directory(objectBoxFile).build()
+                }
+
                 single { get<AppDatabase>().userDao() }
                 single { get<AppDatabase>().categoryDao() }
                 single { get<AppDatabase>().timeRecordDao() }
                 single { get<AppDatabase>().timeRecordHistoryDao() }
-                single<IUserRepository> { UserRepositoryImpl(get()) }
-                single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
-                single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get(), get()) }
+
+                single<IUserRepository>(named("room")) { UserRepositoryImpl(get()) }
+                single<ICategoryRepository>(named("room")) { CategoryRepositoryImpl(get()) }
+                single<ITimeRecordRepository>(named("room")) { TimeRecordRepositoryImpl(get(), get()) }
+
+                single<IUserRepository>(named("objectbox")) { UserRepositoryObjectBoxImpl(get()) }
+                single<ICategoryRepository>(named("objectbox")) { CategoryRepositoryObjectBoxImpl(get()) }
+                single<ITimeRecordRepository>(named("objectbox")) { TimeRecordRepositoryObjectBoxImpl(get()) }
+
+                single<IUserRepository> { get(named("objectbox")) }
+                single<ICategoryRepository> { get(named("objectbox")) }
+                single<ITimeRecordRepository> { get(named("objectbox")) }
+
                 single<IPasswordHasher> { PasswordHasherImpl() }
 
                 single { SessionManager(get(named("session_file"))) }
+
+                single {
+                    DataMigrationUseCase(
+                        get(named("room")), get(named("objectbox")),
+                        get(named("room")), get(named("objectbox")),
+                        get(named("room")), get(named("objectbox"))
+                    )
+                }
+
+                single {
+                    val file = get<File>(named("db_file"))
+                    MigrationManager(file.absolutePath, get())
+                }
 
                 factoryOf(::RegisterUserUseCase)
                 factoryOf(::LoginUserUseCase)
@@ -144,6 +189,7 @@ class TimeTrackerApp : Application() {
                 factoryOf(::RollbackRecordDescriptionUseCase)
                 factoryOf(::GetDescriptionHistoryUseCase)
 
+                factory { MigrationViewModel(get()) }
                 factory { AuthViewModel(get(), get(), get(), get()) }
                 factory { DashboardViewModel(get(), get(), get(), get(), get()) }
                 factory { CategoriesViewModel(get(), get(), get(), get(), get(), get(), get()) }
