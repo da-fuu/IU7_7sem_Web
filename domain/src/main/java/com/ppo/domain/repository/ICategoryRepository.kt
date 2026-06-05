@@ -10,4 +10,5 @@ interface ICategoryRepository {
     suspend fun saveCategory(category: Category): Result<Unit>
     suspend fun findCategoryByName(userId: UserId?, name: String): Category?
     suspend fun deleteCategory(categoryId: CategoryId): Result<Unit>
+    suspend fun getAllCategories(): List<Category>
 }

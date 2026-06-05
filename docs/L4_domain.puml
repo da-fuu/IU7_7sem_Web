@@ -46,6 +46,7 @@ package "Бизнес-логика" #E8F5E9 {
         + suspend saveUser(user: User): Result<Unit>
         + suspend getUserRole(userId: UserId): UserRole?
         + suspend getUserById(userId: UserId): User?
+        + suspend getAllUsers(): List<User>
     }
 
     interface ITimeRecordRepository <<Interface>> {
@@ -57,6 +58,7 @@ package "Бизнес-логика" #E8F5E9 {
         + suspend getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
         + suspend addDescriptionVersion(version: DescriptionVersion): Result<Unit>
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
+        + suspend getAllTimeRecords(): List<TimeRecord>
     }
 
     interface ICategoryRepository <<Interface>> {
@@ -64,6 +66,7 @@ package "Бизнес-логика" #E8F5E9 {
         + suspend saveCategory(category: Category): Result<Unit>
         + suspend findCategoryByName(...): Category?
         + suspend deleteCategory(categoryId: CategoryId): Result<Unit>
+        + suspend getAllCategories(): List<Category>
     }
 
     interface IPasswordHasher <<Interface>> {

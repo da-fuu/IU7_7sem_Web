@@ -49,6 +49,11 @@ afterEvaluate {
 dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
+    implementation(project(":data_objectbox"))
+    implementation(project(":migration"))
+    
+    implementation(libs.io.objectbox.android)
+    implementation(libs.io.objectbox.kotlin)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

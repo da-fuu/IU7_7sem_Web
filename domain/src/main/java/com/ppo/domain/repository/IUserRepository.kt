@@ -9,4 +9,5 @@ interface IUserRepository {
     suspend fun saveUser(user: User): Result<Unit>
     suspend fun getUserRole(userId: UserId): UserRole?
     suspend fun getUserById(userId: UserId): User?
+    suspend fun getAllUsers(): List<User>
 }

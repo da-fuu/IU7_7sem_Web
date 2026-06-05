@@ -21,4 +21,5 @@ interface ITimeRecordRepository {
     suspend fun getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
     suspend fun addDescriptionVersion(version: DescriptionVersion): Result<Unit>
     suspend fun deleteRecord(recordId: RecordId): Result<Unit>
+    suspend fun getAllTimeRecords(): List<TimeRecord>
 }
