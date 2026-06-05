@@ -1,8 +1,6 @@
 @startuml
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
-skinparam nodesep 60
-skinparam ranksep 60
 
 package "Графический интерфейс" #E3F2FD {
 
@@ -41,7 +39,12 @@ package "Графический интерфейс" #E3F2FD {
         class RecordsViewModel <<ViewModel>> {
             + records: StateFlow<List<TimeRecord>>
             + categories: StateFlow<List<Category>>
+            + historyList: StateFlow<List<DescriptionVersion>>
+            + selectedRecordIdForHistory: StateFlow<RecordId?>
             + addManualRecord(catId, start, end, desc)
+            + loadHistory(recordId)
+            + updateDescription(recordId, newDesc)
+            + rollbackDescription(recordId, versionId)
         }
     }
 
@@ -77,6 +80,9 @@ package "Графический интерфейс" #E3F2FD {
         class StopTimerUseCase
         class GetCategoriesUseCase
         class GetTimeRecordsUseCase
+        class UpdateRecordDescriptionUseCase
+        class RollbackRecordDescriptionUseCase
+        class GetDescriptionHistoryUseCase
     }
 
     AuthViewModel --> LoginUserUseCase
@@ -90,6 +96,9 @@ package "Графический интерфейс" #E3F2FD {
     CategoriesViewModel --> GetCategoriesUseCase
 
     RecordsViewModel --> GetTimeRecordsUseCase
+    RecordsViewModel --> UpdateRecordDescriptionUseCase
+    RecordsViewModel --> RollbackRecordDescriptionUseCase
+    RecordsViewModel --> GetDescriptionHistoryUseCase
 }
 
 @enduml

@@ -1,8 +1,6 @@
 @startuml
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
-skinparam nodesep 60
-skinparam ranksep 60
 
 package "Бизнес-логика" #E8F5E9 {
 
@@ -32,6 +30,13 @@ package "Бизнес-логика" #E8F5E9 {
         + getDurationMinutes(): Long
     }
 
+    class DescriptionVersion <<Entity>> {
+        - id: VersionId
+        - recordId: RecordId
+        - description: String
+        - modifiedAt: Instant
+    }
+
     class BusinessConfig <<Model>> {
         - minDurationMinutes: Long
     }
@@ -45,9 +50,12 @@ package "Бизнес-логика" #E8F5E9 {
 
     interface ITimeRecordRepository <<Interface>> {
         + suspend saveRecord(record: TimeRecord): Result<Unit>
+        + suspend getRecordById(recordId: RecordId): TimeRecord?
         + suspend getOverlappingRecords(...): List<TimeRecord>
         + suspend getActiveSession(userId: UserId): TimeRecord?
         + suspend getTimeRecords(userId: UserId): List<TimeRecord>
+        + suspend getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
+        + suspend addDescriptionVersion(version: DescriptionVersion): Result<Unit>
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
     }
 
@@ -70,18 +78,21 @@ package "Бизнес-логика" #E8F5E9 {
         class StartTimerUseCase <<UseCase>>
         class StopTimerUseCase <<UseCase>>
         class AddManualRecordUseCase <<UseCase>>
-        class EditTimeRecordUseCase <<UseCase>>
         class GetCategoriesUseCase <<UseCase>>
         class GetTimeRecordsUseCase <<UseCase>>
         class ManageUserCategoryUseCase <<UseCase>>
         class DeleteCategoryUseCase <<UseCase>>
         class AdminManageBaseCategoryUseCase <<UseCase>>
         class AdminDeleteBaseCategoryUseCase <<UseCase>>
+        class UpdateRecordDescriptionUseCase <<UseCase>>
+        class RollbackRecordDescriptionUseCase <<UseCase>>
+        class GetDescriptionHistoryUseCase <<UseCase>>
     }
 
     User "1" <-- "*" Category : "Владеет"
     User "1" <-- "*" TimeRecord : "Владеет"
     Category "1" <-- "*" TimeRecord : "Относится к"
+    TimeRecord "1" <-- "*" DescriptionVersion : "Имеет историю"
 
     RegisterUserUseCase o--> IUserRepository
     RegisterUserUseCase o--> IPasswordHasher
@@ -96,10 +107,10 @@ package "Бизнес-логика" #E8F5E9 {
     AddManualRecordUseCase o--> ITimeRecordRepository
     AddManualRecordUseCase o--> BusinessConfig
 
-    EditTimeRecordUseCase o--> ITimeRecordRepository
-    EditTimeRecordUseCase o--> BusinessConfig
-
     GetTimeRecordsUseCase o--> ITimeRecordRepository
+    UpdateRecordDescriptionUseCase o--> ITimeRecordRepository
+    RollbackRecordDescriptionUseCase o--> ITimeRecordRepository
+    GetDescriptionHistoryUseCase o--> ITimeRecordRepository
 
     GetCategoriesUseCase o--> ICategoryRepository
     ManageUserCategoryUseCase o--> ICategoryRepository

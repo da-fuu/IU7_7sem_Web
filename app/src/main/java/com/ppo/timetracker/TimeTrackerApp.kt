@@ -120,9 +120,10 @@ class TimeTrackerApp : Application() {
                 single { get<AppDatabase>().userDao() }
                 single { get<AppDatabase>().categoryDao() }
                 single { get<AppDatabase>().timeRecordDao() }
+                single { get<AppDatabase>().timeRecordHistoryDao() }
                 single<IUserRepository> { UserRepositoryImpl(get()) }
                 single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
-                single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get()) }
+                single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get(), get()) }
                 single<IPasswordHasher> { PasswordHasherImpl() }
 
                 single { SessionManager(get(named("session_file"))) }
@@ -139,11 +140,14 @@ class TimeTrackerApp : Application() {
                 factoryOf(::GetTimeRecordsUseCase)
                 factoryOf(::DeleteCategoryUseCase)
                 factoryOf(::AdminDeleteBaseCategoryUseCase)
+                factoryOf(::UpdateRecordDescriptionUseCase)
+                factoryOf(::RollbackRecordDescriptionUseCase)
+                factoryOf(::GetDescriptionHistoryUseCase)
 
                 factory { AuthViewModel(get(), get(), get(), get()) }
                 factory { DashboardViewModel(get(), get(), get(), get(), get()) }
                 factory { CategoriesViewModel(get(), get(), get(), get(), get(), get(), get()) }
-                factory { RecordsViewModel(get(), get(), get(), get()) }
+                factory { RecordsViewModel(get(), get(), get(), get(), get(), get(), get()) }
             })
         }
     }
