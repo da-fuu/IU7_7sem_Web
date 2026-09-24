@@ -2,6 +2,7 @@
 left to right direction
 skinparam packageStyle rectangle
 
+actor "Неавторизованный пользователь" as guest
 actor "Пользователь" as user
 actor "Администратор" as admin
 admin -|> user
@@ -19,8 +20,9 @@ rectangle "TimeTracker" {
   usecase "Управлять базовыми категориями" as UC_ManageDefaultCategories
 }
 
-user --> UC_Register
-user --> UC_Login
+guest --> UC_Register
+guest --> UC_Login
+
 user --> UC_Timer
 user --> UC_Manual
 user --> UC_ManageOwnCategories

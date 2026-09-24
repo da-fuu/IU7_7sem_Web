@@ -6,7 +6,7 @@ Container_Boundary(web_backend, "Web Backend API (Ktor / Clean Architecture)") {
     Component(auth_security, "Auth & Security Service", "JWT / PasswordHasher", "Проверяет токены, хэширует пароли, контролирует права ролей USER/ADMIN.")
     Component(domain_core, "Domain Core (Use Cases)", "com.ppo.domain.*", "Чистая бизнес-логика: StartTimerUseCase, StopTimerUseCase, AddManualRecordUseCase, Categories, Rollback.")
     Component(repo_interfaces, "Repository Interfaces", "com.ppo.domain.repository.*", "Контракты доступа к данным (IUserRepository, ICategoryRepository, ITimeRecordRepository).")
-    Component(db_postgres, "PostgreSQL Data Repositories", "Exposed / JDBC Impl", "Реализация репозиториев для серверной PostgreSQL (Master / Replica).")
+    Component(db_postgres, "PostgreSQL Data Repositories", "Exposed / JDBC Impl", "Реализация репозиториев для серверной базы данных PostgreSQL.")
     Component(db_room, "SQLite / Room Repositories", "Room DAO", "Сохраненный адаптер доступа к локальной SQLite.")
 }
 

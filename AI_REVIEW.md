@@ -6,13 +6,13 @@
 
 ## WebLab#1 — I'm a startuper (and/or a system architect)
 
-- **Задача**: Провести комплексный системный анализ проекта TimeTracker, сформировать технические и архитектурные требования для Web-версии, подготовить Use-Case, BPMN, ER, C4 диаграммы, эскизы интерфейса, оформить ADR и подготовить контекст агента ([AGENTS.md](file:///home/dafuu/IU7_7sem_web/AGENTS.md)).
+- **Задача**: Провести комплексный системный анализ проекта TimeTracker, сформировать технические и архитектурные требования для Web-версии, подготовить Use-Case, BPMN, ER, C4 диаграммы, эскизы интерфейса, оформить ADR и подготовить контекст агента ([AGENTS.md](AGENTS.md)).
 - **Инструмент / Модель**: Antigravity Coding Agent (Gemini 3.8 Flash High).
 - **Результаты и артефакты**:
-  - Комплект системного анализа и спецификация: [README.md](file:///home/dafuu/IU7_7sem_web/README.md)
-  - Контекст и руководство для агентов: [AGENTS.md](file:///home/dafuu/IU7_7sem_web/AGENTS.md)
-  - Исходники диаграмм C4, BPMN, ER, Use-Case: каталог [docs/](file:///home/dafuu/IU7_7sem_web/docs/)
-  - Архитектурные решения: [ADR-001](file:///home/dafuu/IU7_7sem_web/README.md#111-adr-001-выбор-стека-и-архитектуры-веб-бэкенда), [ADR-002](file:///home/dafuu/IU7_7sem_web/README.md#112-adr-002-выбор-архитектуры-хранения-данных-для-web), [ADR-003](file:///home/dafuu/IU7_7sem_web/README.md#113-adr-003-выбор-фронтенд-стека-и-сборщика)
+  - Комплект системного анализа и спецификация: [README.md](README.md)
+  - Контекст и руководство для агентов: [AGENTS.md](AGENTS.md)
+  - Исходники диаграмм C4, BPMN, ER, Use-Case: каталог [docs/](docs/)
+  - Архитектурные решения: [ADR-001](docs/adr/ADR-001-backend-stack.md), [ADR-002](docs/adr/ADR-002-database.md), [ADR-003](docs/adr/ADR-003-frontend-stack.md)
 - **Способ проверки**:
   - Проверка согласованности ролей (`USER`, `ADMIN`), сущностей (`User`, `Category`, `TimeRecord`, `DescriptionVersion`), бизнес-правил (минимальная длительность 1 мин, запрет пересечения интервалов) между Use-Case, BPMN, ER, C4 и эскизами экранов.
   - Проверка валидности синтаксиса PlantUML, DBML и Mermaid диаграмм.

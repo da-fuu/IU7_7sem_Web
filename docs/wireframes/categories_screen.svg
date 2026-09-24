@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
   <rect width="800" height="500" fill="#f8fafc" rx="8"/>
   <rect width="800" height="60" fill="#1e293b"/>
-  <text x="24" y="38" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">TimeTracker Web</text>
-  <text x="540" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Таймер</text>
-  <text x="610" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Записи</text>
-  <text x="670" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="14">Категории</text>
-  <circle cx="750" cy="30" r="16" fill="#e11d48"/>
-  <text x="744" y="35" fill="#ffffff" font-family="sans-serif" font-size="13">A</text>
+  <text x="30" y="38" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">TimeTracker Web</text>
+  <text x="450" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Таймер</text>
+  <text x="530" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Записи</text>
+  <text x="605" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="14">Категории</text>
+  <circle cx="745" cy="30" r="16" fill="#e11d48"/>
+  <text x="745" y="35" text-anchor="middle" dominant-baseline="central" fill="#ffffff" font-family="sans-serif" font-size="13" font-weight="bold">A</text>
 
   <!-- Left: Create Category Form -->
   <rect x="50" y="90" width="300" height="340" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" rx="8"/>
@@ -25,7 +25,7 @@
   <text x="95" y="308" fill="#334155" font-family="sans-serif" font-size="12">Базовая категория (Admin)</text>
 
   <rect x="70" y="340" width="260" height="40" fill="#2563eb" rx="6"/>
-  <text x="165" y="365" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="bold">Создать</text>
+  <text x="200" y="365" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="bold">Создать</text>
 
   <!-- Right: Category List -->
   <rect x="370" y="90" width="380" height="340" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" rx="8"/>
@@ -35,23 +35,23 @@
   <rect x="390" y="150" width="340" height="45" fill="#f1f5f9" rx="6"/>
   <circle cx="410" cy="172" r="8" fill="#3b82f6"/>
   <text x="430" y="177" fill="#1e293b" font-family="sans-serif" font-size="14">Работа / Проекты</text>
-  <rect x="580" y="162" width="70" height="20" fill="#e2e8f0" rx="4"/>
-  <text x="587" y="176" fill="#475569" font-family="sans-serif" font-size="10">DEFAULT</text>
-  <text x="690" y="177" fill="#ef4444" font-family="sans-serif" font-size="13">Удалить</text>
+  <rect x="575" y="162" width="65" height="22" fill="#e2e8f0" rx="4"/>
+  <text x="607" y="177" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10" font-weight="bold">DEFAULT</text>
+  <text x="675" y="177" fill="#ef4444" font-family="sans-serif" font-size="13">Удалить</text>
 
   <!-- Row 2 -->
   <rect x="390" y="205" width="340" height="45" fill="#f1f5f9" rx="6"/>
   <circle cx="410" cy="227" r="8" fill="#10b981"/>
   <text x="430" y="232" fill="#1e293b" font-family="sans-serif" font-size="14">Спорт и здоровье</text>
-  <rect x="580" y="217" width="70" height="20" fill="#e2e8f0" rx="4"/>
-  <text x="587" y="231" fill="#475569" font-family="sans-serif" font-size="10">DEFAULT</text>
-  <text x="690" y="232" fill="#ef4444" font-family="sans-serif" font-size="13">Удалить</text>
+  <rect x="575" y="217" width="65" height="22" fill="#e2e8f0" rx="4"/>
+  <text x="607" y="232" text-anchor="middle" fill="#475569" font-family="sans-serif" font-size="10" font-weight="bold">DEFAULT</text>
+  <text x="675" y="232" fill="#ef4444" font-family="sans-serif" font-size="13">Удалить</text>
 
   <!-- Row 3 -->
   <rect x="390" y="260" width="340" height="45" fill="#f1f5f9" rx="6"/>
   <circle cx="410" cy="282" r="8" fill="#f59e0b"/>
   <text x="430" y="287" fill="#1e293b" font-family="sans-serif" font-size="14">Отдых и хобби</text>
-  <rect x="580" y="272" width="60" height="20" fill="#dbeafe" rx="4"/>
-  <text x="590" y="286" fill="#1d4ed8" font-family="sans-serif" font-size="10">USER</text>
-  <text x="690" y="287" fill="#ef4444" font-family="sans-serif" font-size="13">Удалить</text>
+  <rect x="575" y="272" width="65" height="22" fill="#dbeafe" rx="4"/>
+  <text x="607" y="287" text-anchor="middle" fill="#1d4ed8" font-family="sans-serif" font-size="10" font-weight="bold">USER</text>
+  <text x="675" y="287" fill="#ef4444" font-family="sans-serif" font-size="13">Удалить</text>
 </svg>

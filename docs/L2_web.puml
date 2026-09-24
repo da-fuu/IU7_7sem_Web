@@ -6,10 +6,9 @@ Person(admin, "Администратор", "Системный админист
 
 System_Boundary(time_tracker_system, "TimeTracker Web System") {
     Container(spa, "Web SPA Client", "TypeScript, React, Vite", "Одностраничное приложение. Предоставляет интерфейс таймера, добавления записей, аналитики и управления категориями.")
-    Container(reverse_proxy, "Reverse Proxy / Web Server", "Nginx", "Маршрутизирует запросы (/api/v1, /documentation, /status, /management, /legacy), раздает статику, обеспечивает балансировку.")
-    Container(web_backend, "Web Backend API", "Kotlin, Ktor REST API", "Обрабатывает HTTP запросы, выполняет Use Cases предметной области, обеспечивает валидацию и отдает Swagger UI.")
-    ContainerDb(db_master, "Primary Database (Master)", "PostgreSQL", "Хранит пользователей, категории, записи времени и историю описаний. Принимает операции записи и чтения.")
-    ContainerDb(db_replica, "Read Replica Database", "PostgreSQL", "Реплика базы данных для масштабирования операций чтения (балансировка 2:1:1).")
+    Container(reverse_proxy, "Reverse Proxy / Web Server", "Nginx", "Маршрутизирует запросы к API (/api/v1), раздает статические ресурсы (HTML, CSS, JS).")
+    Container(web_backend, "Web Backend API", "Kotlin, Ktor REST API", "Обрабатывает HTTP запросы, выполняет сценарии бизнес-логики, обеспечивает валидацию и отдает Swagger UI.")
+    ContainerDb(db, "База данных", "PostgreSQL", "Хранит пользователей, категории, записи времени и историю версий описаний.")
     Container(tech_ui, "Технологический UI (CLI)", "Kotlin JVM", "Консольный клиент для разработчиков и технического персонала.")
     Container(legacy_app, "Мобильный клиент (Android)", "Kotlin, Jetpack Compose", "Легаси-приложение из курса ППО.")
 }
@@ -19,11 +18,9 @@ Rel(admin, spa, "Управляет базовыми категориями", "H
 
 Rel(spa, reverse_proxy, "Отправляет API запросы", "HTTPS / JSON")
 Rel(reverse_proxy, spa, "Раздает статические ресурсы (HTML, JS, CSS)", "HTTPS")
-Rel(reverse_proxy, web_backend, "Проксирует API запросы (/api/v1/...) с балансировкой", "HTTP / Reverse Proxy")
+Rel(reverse_proxy, web_backend, "Проксирует API запросы (/api/v1/...)", "HTTP")
 
-Rel(web_backend, db_master, "Запись и чтение данных", "JDBC / SQL (R/W)")
-Rel(web_backend, db_replica, "Масштабирование операций чтения (GET)", "JDBC / SQL (RO)")
-Rel(db_master, db_replica, "Асинхронная потоковая репликация", "PostgreSQL WAL Stream")
+Rel(web_backend, db, "Чтение и запись данных", "JDBC / SQL")
 
 Rel(tech_ui, web_backend, "Выполняет операции через API", "HTTP / REST")
 Rel(legacy_app, web_backend, "Синхронизирует данные через API", "HTTPS / REST")
