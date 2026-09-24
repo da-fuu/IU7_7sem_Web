@@ -113,16 +113,13 @@
 
 ## 12. Раскрытие проекта на уровнях L1 и L2 нотации С4
 ### Уровень L1 (Контекст):
-![L1](docs/L1.svg)  
-*Веб-архитектура:* [docs/L1_web.puml](docs/L1_web.puml)
+![L1](docs/L1_web.svg)  
 
 ### Уровень L2 (Контейнеры):
-![L2](docs/L2.svg)  
-*Веб-архитектура:* [docs/L2_web.puml](docs/L2_web.puml)
+![L2](docs/L2_web.svg)  
 
 ## 13. Раскрытие проекта на уровне L3 нотации С4
-![L3](docs/L3.svg)  
-*Веб-архитектура:* [docs/L3_web.puml](docs/L3_web.puml)
+![L3](docs/L3_web.svg)  
 
 ## 14. Диаграмма БД в нотации DBML
 ![db_diagram](docs/db.svg)
