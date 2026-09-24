@@ -1,0 +1,19 @@
+@startuml
+!include <c4/C4_Component.puml>
+
+Container_Boundary(web_backend, "Web Backend API (Ktor / Clean Architecture)") {
+    Component(routing, "Routing & HTTP Controllers", "Ktor Routing, ContentNegotiation", "Обрабатывает HTTP маршруты (/api/v1/users, /categories, /records), сериализует DTO, отдает Swagger UI.")
+    Component(auth_security, "Auth & Security Service", "JWT / PasswordHasher", "Проверяет токены, хэширует пароли, контролирует права ролей USER/ADMIN.")
+    Component(domain_core, "Domain Core (Use Cases)", "com.ppo.domain.*", "Чистая бизнес-логика: StartTimerUseCase, StopTimerUseCase, AddManualRecordUseCase, Categories, Rollback.")
+    Component(repo_interfaces, "Repository Interfaces", "com.ppo.domain.repository.*", "Контракты доступа к данным (IUserRepository, ICategoryRepository, ITimeRecordRepository).")
+    Component(db_postgres, "PostgreSQL Data Repositories", "Exposed / JDBC Impl", "Реализация репозиториев для серверной PostgreSQL (Master / Replica).")
+    Component(db_room, "SQLite / Room Repositories", "Room DAO", "Сохраненный адаптер доступа к локальной SQLite.")
+}
+
+Rel(routing, auth_security, "Аутентифицирует запросы", "Internal")
+Rel(routing, domain_core, "Вызывает сценарии бизнес-логики", "Kotlin Coroutines")
+Rel(domain_core, repo_interfaces, "Использует интерфейсы репозиториев", "Interfaces")
+Rel(db_postgres, repo_interfaces, "Реализует", "Implements")
+Rel(db_room, repo_interfaces, "Реализует", "Implements")
+
+@enduml

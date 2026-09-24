@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <rect width="800" height="500" fill="#f8fafc" rx="8"/>
+  <rect width="800" height="60" fill="#1e293b"/>
+  <text x="24" y="38" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">TimeTracker Web</text>
+  <text x="540" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Таймер</text>
+  <text x="610" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="14">Записи</text>
+  <text x="670" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Категории</text>
+  <circle cx="750" cy="30" r="16" fill="#3b82f6"/>
+  <text x="744" y="35" fill="#ffffff" font-family="sans-serif" font-size="13">U</text>
+
+  <!-- Left: Form -->
+  <rect x="50" y="90" width="340" height="370" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" rx="8"/>
+  <text x="70" y="125" fill="#0f172a" font-family="sans-serif" font-size="18" font-weight="bold">Добавить запись вручную</text>
+
+  <text x="70" y="160" fill="#475569" font-family="sans-serif" font-size="13">Категория</text>
+  <rect x="70" y="170" width="300" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4"/>
+  <text x="85" y="193" fill="#334155" font-family="sans-serif" font-size="13">Обучение / Лабораторные</text>
+
+  <text x="70" y="230" fill="#475569" font-family="sans-serif" font-size="13">Время начала</text>
+  <rect x="70" y="240" width="140" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4"/>
+  <text x="85" y="263" fill="#334155" font-family="sans-serif" font-size="13">14:00 24.09.2026</text>
+
+  <text x="230" y="230" fill="#475569" font-family="sans-serif" font-size="13">Время окончания</text>
+  <rect x="230" y="240" width="140" height="36" fill="#f8fafc" stroke="#cbd5e1" rx="4"/>
+  <text x="245" y="263" fill="#334155" font-family="sans-serif" font-size="13">15:30 24.09.2026</text>
+
+  <text x="70" y="300" fill="#475569" font-family="sans-serif" font-size="13">Описание активности</text>
+  <rect x="70" y="310" width="300" height="70" fill="#f8fafc" stroke="#cbd5e1" rx="4"/>
+  <text x="80" y="335" fill="#64748b" font-family="sans-serif" font-size="12">Реализация REST API и документации...</text>
+
+  <rect x="70" y="400" width="300" height="40" fill="#2563eb" rx="6"/>
+  <text x="175" y="425" fill="#ffffff" font-family="sans-serif" font-size="14" font-weight="bold">Сохранить</text>
+
+  <!-- Right: Records Timeline List -->
+  <rect x="410" y="90" width="340" height="370" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5" rx="8"/>
+  <text x="430" y="125" fill="#0f172a" font-family="sans-serif" font-size="18" font-weight="bold">История записей за сегодня</text>
+
+  <!-- Item 1 -->
+  <rect x="430" y="150" width="300" height="65" fill="#f1f5f9" rx="6"/>
+  <rect x="430" y="150" width="6" height="65" fill="#3b82f6" rx="2"/>
+  <text x="445" y="172" fill="#1e293b" font-family="sans-serif" font-size="13" font-weight="bold">Обучение / Лабораторные</text>
+  <text x="445" y="192" fill="#64748b" font-family="sans-serif" font-size="12">10:00 - 11:30 (1 ч 30 мин)</text>
+  <text x="445" y="206" fill="#475569" font-family="sans-serif" font-size="11">Проектирование C4 диаграмм</text>
+
+  <!-- Item 2 -->
+  <rect x="430" y="225" width="300" height="65" fill="#f1f5f9" rx="6"/>
+  <rect x="430" y="225" width="6" height="65" fill="#10b981" rx="2"/>
+  <text x="445" y="247" fill="#1e293b" font-family="sans-serif" font-size="13" font-weight="bold">Спорт / Прогулка</text>
+  <text x="445" y="267" fill="#64748b" font-family="sans-serif" font-size="12">12:00 - 12:45 (45 мин)</text>
+  <text x="445" y="281" fill="#475569" font-family="sans-serif" font-size="11">Бег в парке</text>
+</svg>

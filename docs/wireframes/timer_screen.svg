@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <rect width="800" height="500" fill="#f8fafc" rx="8"/>
+  <rect width="800" height="60" fill="#1e293b"/>
+  <text x="24" y="38" fill="#ffffff" font-family="sans-serif" font-size="20" font-weight="bold">TimeTracker Web</text>
+  <text x="540" y="36" fill="#cbd5e1" font-family="sans-serif" font-size="14">Таймер</text>
+  <text x="610" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Записи</text>
+  <text x="670" y="36" fill="#94a3b8" font-family="sans-serif" font-size="14">Категории</text>
+  <circle cx="750" cy="30" r="16" fill="#3b82f6"/>
+  <text x="744" y="35" fill="#ffffff" font-family="sans-serif" font-size="13">U</text>
+
+  <!-- Main Card -->
+  <rect x="150" y="100" width="500" height="340" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" rx="12"/>
+  <text x="320" y="140" fill="#0f172a" font-family="sans-serif" font-size="22" font-weight="bold">Текущая активность</text>
+
+  <!-- Category Selector Dropdown -->
+  <rect x="250" y="165" width="300" height="40" fill="#f1f5f9" stroke="#cbd5e1" rx="6"/>
+  <circle cx="270" cy="185" r="8" fill="#10b981"/>
+  <text x="290" y="190" fill="#334155" font-family="sans-serif" font-size="14">Разработка ПО (Работа)</text>
+  <path d="M 525 182 L 532 190 L 539 182" fill="none" stroke="#64748b" stroke-width="2"/>
+
+  <!-- Stopwatch Display -->
+  <text x="290" y="270" fill="#1e293b" font-family="monospace" font-size="48" font-weight="bold">00:42:18</text>
+
+  <!-- Action Buttons -->
+  <rect x="250" y="310" width="140" height="48" fill="#10b981" rx="8"/>
+  <text x="295" y="340" fill="#ffffff" font-family="sans-serif" font-size="16" font-weight="bold">СТАРТ</text>
+
+  <rect x="410" y="310" width="140" height="48" fill="#ef4444" rx="8"/>
+  <text x="458" y="340" fill="#ffffff" font-family="sans-serif" font-size="16" font-weight="bold">СТОП</text>
+
+  <!-- Note -->
+  <text x="240" y="395" fill="#64748b" font-family="sans-serif" font-size="12">Минимальная фиксируемая длительность сессии: 1 минута</text>
+</svg>
