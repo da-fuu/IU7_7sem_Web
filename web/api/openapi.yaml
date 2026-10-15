@@ -2,40 +2,40 @@ openapi: 3.1.0
 info:
   title: TimeTracker REST API
   description: |
-    Внешнее публичное REST API системы персонального хронометража, категоризации и аналитики продуктивности TimeTracker.
+    REST API сервиса учета времени и продуктивности TimeTracker.
 
-    Ключевые возможности:
-    * Аутентификация пользователей и ролевая модель (USER, ADMIN)
-    * Управление категориями (системные базовые и личные) с полным CRUD
-    * Запуск и остановка таймера в 1 клик с контролем бизнес-правил (минимальная длительность 1 минута, запрет одновременных активных сессий)
-    * Ручное добавление записей времени с проверкой пересечений и валидацией интервалов
-    * Полный CRUD для записей времени и частичное обновление (PATCH)
-    * Неизменяемый аудит истории изменений описаний записей и откат к любой исторической версии (forward-only rollback)
+    Основные возможности:
+    * Учетные записи и роли пользователей (USER, ADMIN)
+    * Управление категориями активностей (системные и пользовательские)
+    * Запуск и остановка сессий таймера
+    * Создание и учет записей времени с контролем пересечений интервалов
+    * Фильтрация, полное и частичное обновление записей
+    * Аудит истории изменений описания и восстановление предыдущих версий
   version: 1.0.0
   contact:
-    name: TimeTracker Team
-    email: zharinovma@student.bmstu.ru
+    name: TimeTracker Support
+    email: support@timetracker.local
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
   - url: http://localhost:8080
-    description: Локальный сервер разработки (WebLab#3)
+    description: Локальный сервер разработки
   - url: http://localhost:80
-    description: Шлюз Nginx (WebLab#4)
+    description: Шлюз Nginx
 
 tags:
   - name: Auth
-    description: Регистрация, вход и получение профиля текущего пользователя
+    description: Аутентификация и профиль пользователя
   - name: Categories
-    description: Управление категориями активностей (полный CRUD)
+    description: Управление категориями активностей
   - name: Timer
-    description: Управление активной сессией таймера в 1 клик
+    description: Управление активным таймером
   - name: Records
-    description: Управление записями времени (полный CRUD, фильтрация)
+    description: Управление записями времени
   - name: History
-    description: Аудит изменений описания записи времени и откат к предыдущим версиям
+    description: История изменений описания записей
 
 paths:
   /api/v1/auth/register:
@@ -45,6 +45,7 @@ paths:
       summary: Регистрация нового пользователя
       description: Создает нового пользователя в системе и возвращает токен доступа.
       operationId: registerUser
+      security: []
       requestBody:
         required: true
         content:
@@ -97,6 +98,7 @@ paths:
       summary: Аутентификация пользователя
       description: Проверяет учетные данные и возвращает JWT токен доступа.
       operationId: loginUser
+      security: []
       requestBody:
         required: true
         content:
@@ -184,7 +186,8 @@ paths:
             type: string
             enum: [all, default, custom]
             default: all
-          example: all
+            examples:
+              - all
       responses:
         '200':
           description: Список категорий
@@ -253,7 +256,8 @@ paths:
               description: Ссылка на созданный ресурс
               schema:
                 type: string
-                example: "/api/v1/categories/33333333-3333-3333-3333-333333333333"
+                examples:
+                  - "/api/v1/categories/33333333-3333-3333-3333-333333333333"
           content:
             application/json:
               schema:
@@ -371,10 +375,9 @@ paths:
     patch:
       tags:
         - Categories
-      summary: Частичное обновление категории (PATCH)
+      summary: Частичное обновление категории
       description: |
-        Частичное изменение параметров категории (например, только цвет или только название).
-        Выполняет требования основного задания о наличии примера частичного UPDATE.
+        Частичное изменение параметров категории (название или цвет).
       operationId: patchCategory
       security:
         - bearerAuth: []
@@ -441,10 +444,10 @@ paths:
     get:
       tags:
         - Timer
-      summary: Проверка текущей активной сессии таймера
+      summary: Получение текущей активной сессии таймера
       description: |
-        Возвращает данные о запущенном секундомере текущего пользователя.
-        Если активного таймера нет, возвращается статус 204 No Content.
+        Возвращает данные о запущенном таймере текущего пользователя.
+        Если активный таймер отсутствует, возвращается статус 204 No Content.
       operationId: getActiveTimer
       security:
         - bearerAuth: []
@@ -473,10 +476,10 @@ paths:
     post:
       tags:
         - Timer
-      summary: Запуск таймера (в 1 клик)
+      summary: Запуск таймера
       description: |
-        Запускает активный секундомер для указанной категории.
-        Бизнес-правило: у пользователя может быть не более одной активной сессии одновременно.
+        Запускает сессию таймера для указанной категории.
+        У пользователя может быть не более одной активной сессии одновременно.
       operationId: startTimer
       security:
         - bearerAuth: []
@@ -541,8 +544,8 @@ paths:
         - Timer
       summary: Остановка активного таймера
       description: |
-        Останавливает активный таймер, вычисляет длительность сессии.
-        Бизнес-правило минимальной длительности: сессия длительностью менее 1 минуты считается случайным кликом и отклоняется бизнес-логикой со статусом 422 Unprocessable Entity (не сохраняется в базу данных).
+        Останавливает активный таймер и сохраняет запись времени.
+        Сессии длительностью менее 1 минуты отклоняются (код 422) и не сохраняются.
       operationId: stopTimer
       security:
         - bearerAuth: []
@@ -616,7 +619,8 @@ paths:
           schema:
             type: string
             format: date-time
-          example: "2026-10-15T00:00:00Z"
+            examples:
+              - "2026-10-15T00:00:00Z"
         - name: to
           in: query
           required: false
@@ -624,7 +628,8 @@ paths:
           schema:
             type: string
             format: date-time
-          example: "2026-10-15T23:59:59Z"
+            examples:
+              - "2026-10-15T23:59:59Z"
         - name: categoryId
           in: query
           required: false
@@ -632,7 +637,8 @@ paths:
           schema:
             type: string
             format: uuid
-          example: "11111111-1111-1111-1111-111111111111"
+            examples:
+              - "11111111-1111-1111-1111-111111111111"
         - name: limit
           in: query
           required: false
@@ -642,7 +648,8 @@ paths:
             minimum: 1
             maximum: 100
             default: 50
-          example: 20
+            examples:
+              - 20
         - name: offset
           in: query
           required: false
@@ -651,7 +658,8 @@ paths:
             type: integer
             minimum: 0
             default: 0
-          example: 0
+            examples:
+              - 0
       responses:
         '200':
           description: Список записей времени
@@ -686,14 +694,14 @@ paths:
     post:
       tags:
         - Records
-      summary: Ручное добавление записи времени
+      summary: Создание записи времени
       description: |
-        Создает завершенную запись времени с явным указанием интервала начала и окончания.
-        Бизнес-правила:
-        * Время начала строго меньше времени окончания (T_start < T_end).
-        * Длительность интервала не менее 1 минуты.
-        * Интервал не должен пересекаться с уже существующими записями данного пользователя (защита от коллизий).
-      operationId: createRecordManual
+        Создает запись времени с указанием интервала начала и окончания.
+        Ограничения:
+        * Время начала строго меньше времени окончания.
+        * Минимальная длительность записи — 1 минута.
+        * Интервал не должен пересекаться с существующими записями пользователя.
+      operationId: createRecord
       security:
         - bearerAuth: []
       requestBody:
@@ -717,7 +725,8 @@ paths:
               description: Ссылка на созданную запись
               schema:
                 type: string
-                example: "/api/v1/records/66666666-6666-6666-6666-666666666666"
+                examples:
+                  - "/api/v1/records/66666666-6666-6666-6666-666666666666"
           content:
             application/json:
               schema:
@@ -969,15 +978,16 @@ paths:
         schema:
           type: string
           format: uuid
-        example: "88888888-8888-8888-8888-888888888888"
+          examples:
+            - "88888888-8888-8888-8888-888888888888"
 
     post:
       tags:
         - History
-      summary: Откат описания записи к выбранной версии
+      summary: Восстановление описания записи из истории
       description: |
-        Выполняет откат описания записи к тексту указанной исторической версии.
-        Бизнес-правило неизменяемости истории: операция отката является forward-only; текущее описание сохраняется в историю как новый снимок, а текст выбранной версии становится актуальным в записи времени.
+        Восстанавливает описание записи из указанной исторической версии.
+        Текущее описание сохраняется в историю как новый снимок перед применением изменений.
       operationId: rollbackDescription
       security:
         - bearerAuth: []
@@ -1031,7 +1041,8 @@ components:
       schema:
         type: string
         format: uuid
-      example: "33333333-3333-3333-3333-333333333333"
+        examples:
+          - "33333333-3333-3333-3333-333333333333"
 
     RecordIdParam:
       name: recordId
@@ -1041,7 +1052,8 @@ components:
       schema:
         type: string
         format: uuid
-      example: "44444444-4444-4444-4444-444444444444"
+        examples:
+          - "44444444-4444-4444-4444-444444444444"
 
   responses:
     BadRequestError:
@@ -1109,24 +1121,28 @@ components:
           type: string
           format: uuid
           description: Уникальный идентификатор пользователя
-          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          examples:
+            - "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         login:
           type: string
           minLength: 3
           maxLength: 50
           description: Уникальный логин пользователя
-          example: "alex_dev"
+          examples:
+            - "alex_dev"
         name:
           type: string
           minLength: 1
           maxLength: 100
           description: Отображаемое имя пользователя
-          example: "Алексей Смирнов"
+          examples:
+            - "Алексей Смирнов"
         role:
           type: string
           enum: [USER, ADMIN]
           description: Роль пользователя в системе
-          example: "USER"
+          examples:
+            - "USER"
 
     UserRegistrationRequest:
       type: object
@@ -1141,26 +1157,30 @@ components:
           maxLength: 50
           pattern: "^[a-zA-Z0-9_.-]+$"
           description: Логин (латиница, цифры, дефис, точка)
-          example: "alex_dev"
+          examples:
+            - "alex_dev"
         name:
           type: string
           minLength: 1
           maxLength: 100
           description: Имя пользователя
-          example: "Алексей Смирнов"
+          examples:
+            - "Алексей Смирнов"
         password:
           type: string
           format: password
           minLength: 6
           maxLength: 128
           description: Пароль учетной записи
-          example: "securePassword123"
+          examples:
+            - "securePassword123"
         role:
           type: string
           enum: [USER, ADMIN]
           default: USER
           description: Желаемая роль пользователя (по умолчанию USER)
-          example: "USER"
+          examples:
+            - "USER"
 
     UserLoginRequest:
       type: object
@@ -1172,13 +1192,15 @@ components:
           type: string
           minLength: 1
           description: Логин пользователя
-          example: "alex_dev"
+          examples:
+            - "alex_dev"
         password:
           type: string
           format: password
           minLength: 1
           description: Пароль пользователя
-          example: "securePassword123"
+          examples:
+            - "securePassword123"
 
     AuthResponse:
       type: object
@@ -1189,7 +1211,8 @@ components:
         token:
           type: string
           description: JWT Access Token для авторизации последующих запросов
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          examples:
+            - "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
         user:
           $ref: '#/components/schemas/User'
 
@@ -1205,28 +1228,34 @@ components:
           type: string
           format: uuid
           description: Уникальный идентификатор категории
-          example: "33333333-3333-3333-3333-333333333333"
+          examples:
+            - "33333333-3333-3333-3333-333333333333"
         userId:
-          type: string
+          type:
+            - string
+            - "null"
           format: uuid
-          nullable: true
           description: Идентификатор владельца (null для глобальных базовых категорий)
-          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          examples:
+            - "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         name:
           type: string
           minLength: 1
           maxLength: 100
           description: Название категории
-          example: "Чтение книг"
+          examples:
+            - "Чтение книг"
         colorHex:
           type: string
           pattern: "^#[0-9A-Fa-f]{6}$"
           description: Цвет категории в формате HEX (#RRGGBB)
-          example: "#8B5CF6"
+          examples:
+            - "#8B5CF6"
         isDefault:
           type: boolean
           description: Признак базовой категории системы
-          example: false
+          examples:
+            - false
 
     CategoryCreateRequest:
       type: object
@@ -1239,17 +1268,20 @@ components:
           minLength: 1
           maxLength: 100
           description: Название категории
-          example: "Чтение книг"
+          examples:
+            - "Чтение книг"
         colorHex:
           type: string
           pattern: "^#[0-9A-Fa-f]{6}$"
           description: Цвет категории в формате HEX (#RRGGBB)
-          example: "#8B5CF6"
+          examples:
+            - "#8B5CF6"
         isDefault:
           type: boolean
           default: false
           description: Флаг базовой категории (разрешено устанавливать в true только администраторам)
-          example: false
+          examples:
+            - false
 
     CategoryUpdateRequest:
       type: object
@@ -1262,12 +1294,14 @@ components:
           minLength: 1
           maxLength: 100
           description: Новое название категории
-          example: "Чтение научной литературы"
+          examples:
+            - "Чтение научной литературы"
         colorHex:
           type: string
           pattern: "^#[0-9A-Fa-f]{6}$"
           description: Новый цвет в формате HEX
-          example: "#7C3AED"
+          examples:
+            - "#7C3AED"
 
     CategoryPatchRequest:
       type: object
@@ -1277,12 +1311,14 @@ components:
           minLength: 1
           maxLength: 100
           description: Новое название категории
-          example: "Хобби и чтение"
+          examples:
+            - "Хобби и чтение"
         colorHex:
           type: string
           pattern: "^#[0-9A-Fa-f]{6}$"
           description: Новый цвет в формате HEX
-          example: "#9333EA"
+          examples:
+            - "#9333EA"
 
     TimeRecord:
       type: object
@@ -1297,33 +1333,40 @@ components:
           type: string
           format: uuid
           description: Уникальный идентификатор записи
-          example: "44444444-4444-4444-4444-444444444444"
+          examples:
+            - "44444444-4444-4444-4444-444444444444"
         userId:
           type: string
           format: uuid
           description: Владелец записи
-          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          examples:
+            - "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         categoryId:
           type: string
           format: uuid
           description: ID привязанной категории
-          example: "11111111-1111-1111-1111-111111111111"
+          examples:
+            - "11111111-1111-1111-1111-111111111111"
         startTime:
           type: string
           format: date-time
           description: Время начала сессии (ISO-8601)
-          example: "2026-10-15T10:00:00Z"
+          examples:
+            - "2026-10-15T10:00:00Z"
         endTime:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
           description: Время окончания сессии (ISO-8601, null если сессия активна)
-          example: "2026-10-15T10:45:00Z"
+          examples:
+            - "2026-10-15T10:45:00Z"
         description:
           type: string
           maxLength: 1000
           description: Текстовое описание выполненной активности
-          example: "Проектирование спецификации OpenAPI 3.1"
+          examples:
+            - "Проектирование спецификации OpenAPI 3.1"
 
     TimeRecordCreateRequest:
       type: object
@@ -1337,23 +1380,27 @@ components:
           type: string
           format: uuid
           description: ID категории
-          example: "11111111-1111-1111-1111-111111111111"
+          examples:
+            - "11111111-1111-1111-1111-111111111111"
         startTime:
           type: string
           format: date-time
           description: Время начала интервала (ISO-8601)
-          example: "2026-10-15T14:00:00Z"
+          examples:
+            - "2026-10-15T14:00:00Z"
         endTime:
           type: string
           format: date-time
           description: Время окончания интервала (ISO-8601)
-          example: "2026-10-15T15:30:00Z"
+          examples:
+            - "2026-10-15T15:30:00Z"
         description:
           type: string
           minLength: 1
           maxLength: 1000
           description: Описание активности
-          example: "Разработка API контроллеров и тестов"
+          examples:
+            - "Разработка API контроллеров и тестов"
 
     TimeRecordUpdateRequest:
       type: object
@@ -1367,23 +1414,27 @@ components:
           type: string
           format: uuid
           description: ID категории
-          example: "11111111-1111-1111-1111-111111111111"
+          examples:
+            - "11111111-1111-1111-1111-111111111111"
         startTime:
           type: string
           format: date-time
           description: Время начала интервала
-          example: "2026-10-15T10:00:00Z"
+          examples:
+            - "2026-10-15T10:00:00Z"
         endTime:
           type: string
           format: date-time
           description: Время окончания интервала
-          example: "2026-10-15T11:00:00Z"
+          examples:
+            - "2026-10-15T11:00:00Z"
         description:
           type: string
           minLength: 1
           maxLength: 1000
           description: Новое описание
-          example: "Проектирование спецификации OpenAPI 3.1 и ревью методов"
+          examples:
+            - "Проектирование спецификации OpenAPI 3.1 и ревью методов"
 
     TimeRecordPatchRequest:
       type: object
@@ -1392,22 +1443,26 @@ components:
           type: string
           format: uuid
           description: Новый ID категории
-          example: "22222222-2222-2222-2222-222222222222"
+          examples:
+            - "22222222-2222-2222-2222-222222222222"
         startTime:
           type: string
           format: date-time
           description: Новое время начала
-          example: "2026-10-15T10:05:00Z"
+          examples:
+            - "2026-10-15T10:05:00Z"
         endTime:
           type: string
           format: date-time
           description: Новое время окончания
-          example: "2026-10-15T10:50:00Z"
+          examples:
+            - "2026-10-15T10:50:00Z"
         description:
           type: string
           maxLength: 1000
           description: Новое описание (архивирует предыдущий текст в историю)
-          example: "Подготовка ТЗ и согласование контракта REST API"
+          examples:
+            - "Подготовка ТЗ и согласование контракта REST API"
 
     PaginatedRecordsResponse:
       type: object
@@ -1424,15 +1479,18 @@ components:
         total:
           type: integer
           description: Общее количество записей, удовлетворяющих фильтру
-          example: 42
+          examples:
+            - 42
         limit:
           type: integer
           description: Размер страницы
-          example: 20
+          examples:
+            - 20
         offset:
           type: integer
           description: Текущее смещение
-          example: 0
+          examples:
+            - 0
 
     ActiveTimerSession:
       type: object
@@ -1448,30 +1506,36 @@ components:
           type: string
           format: uuid
           description: Идентификатор активной записи
-          example: "44444444-4444-4444-4444-444444444444"
+          examples:
+            - "44444444-4444-4444-4444-444444444444"
         categoryId:
           type: string
           format: uuid
           description: Идентификатор категории
-          example: "11111111-1111-1111-1111-111111111111"
+          examples:
+            - "11111111-1111-1111-1111-111111111111"
         categoryName:
           type: string
           description: Название категории
-          example: "Работа / Проекты"
+          examples:
+            - "Работа / Проекты"
         colorHex:
           type: string
           pattern: "^#[0-9A-Fa-f]{6}$"
           description: Цвет категории
-          example: "#3B82F6"
+          examples:
+            - "#3B82F6"
         startTime:
           type: string
           format: date-time
-          description: Момент запуска секундомера
-          example: "2026-10-15T10:00:00Z"
+          description: Время запуска таймера
+          examples:
+            - "2026-10-15T10:00:00Z"
         elapsedSeconds:
           type: integer
           description: Количество прошедших секунд с момента старта
-          example: 2538
+          examples:
+            - 2538
 
     StartTimerRequest:
       type: object
@@ -1482,7 +1546,8 @@ components:
           type: string
           format: uuid
           description: ID категории для трекинга
-          example: "11111111-1111-1111-1111-111111111111"
+          examples:
+            - "11111111-1111-1111-1111-111111111111"
 
     StopTimerRequest:
       type: object
@@ -1491,7 +1556,8 @@ components:
           type: string
           maxLength: 1000
           description: Опциональное описание завершенной активности
-          example: "Проектирование спецификации OpenAPI 3.1"
+          examples:
+            - "Проектирование спецификации OpenAPI 3.1"
 
     DescriptionVersion:
       type: object
@@ -1505,21 +1571,25 @@ components:
           type: string
           format: uuid
           description: Уникальный идентификатор исторической версии
-          example: "77777777-7777-7777-7777-777777777777"
+          examples:
+            - "77777777-7777-7777-7777-777777777777"
         recordId:
           type: string
           format: uuid
           description: Идентификатор записи времени
-          example: "44444444-4444-4444-4444-444444444444"
+          examples:
+            - "44444444-4444-4444-4444-444444444444"
         description:
           type: string
           description: Исторический текст описания
-          example: "Проектирование архитектуры и C4"
+          examples:
+            - "Проектирование архитектуры и C4"
         modifiedAt:
           type: string
           format: date-time
           description: Метка времени, когда описание было изменено и заархивировано
-          example: "2026-10-15T10:20:00Z"
+          examples:
+            - "2026-10-15T10:20:00Z"
 
     ErrorResponse:
       type: object
@@ -1531,19 +1601,23 @@ components:
         code:
           type: string
           description: Машиночитаемый код ошибки
-          example: "VALIDATION_ERROR"
+          examples:
+            - "VALIDATION_ERROR"
         message:
           type: string
           description: Понятное человеку описание ошибки
-          example: "Неверный формат входных данных"
+          examples:
+            - "Неверный формат входных данных"
         details:
           type: array
           description: Дополнительные детализированные ошибки полей
           items:
             type: string
-          example: ["Поле 'colorHex' должно соответствовать шаблону ^#[0-9A-Fa-f]{6}$"]
+          examples:
+            - ["Поле 'colorHex' должно соответствовать шаблону ^#[0-9A-Fa-f]{6}$"]
         timestamp:
           type: string
           format: date-time
           description: Время возникновения ошибки
-          example: "2026-10-15T10:00:00Z"
+          examples:
+            - "2026-10-15T10:00:00Z"
