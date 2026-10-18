@@ -6,12 +6,16 @@ info:
 
     Основные возможности:
     * Учетные записи и роли пользователей (USER, ADMIN)
+    * Ресурсное управление профилями и пользовательскими настройками (/users/{userId}/settings)
+    * Гибкие единицы измерения пороговых длительностей (секунды, минуты, часы, дни)
+    * Автоматическая остановка зависших сессий по настраиваемому лимиту
     * Управление категориями активностей (системные и пользовательские)
-    * Запуск и остановка сессий таймера
-    * Создание и учет записей времени с контролем пересечений интервалов
+    * Учет записей времени в модели открытых интервалов (endTime = null для текущей активности)
+    * Поддержка параллельных активностей и пересекающихся интервалов (multi-tasking)
     * Фильтрация, полное и частичное обновление записей
-    * Аудит истории изменений описания и восстановление предыдущих версий
-  version: 1.0.0
+    * Аудит истории изменений записей (время, категория, описание) и восстановление предыдущих версий
+    * Строгая объектная упаковка всех коллекций (свойство items)
+  version: 1.1.0
   contact:
     name: TimeTracker Support
     email: support@timetracker.local
@@ -20,6 +24,8 @@ info:
     url: https://opensource.org/licenses/MIT
 
 servers:
+  - url: http://localhost:4010
+    description: Локальный Mock-сервер
   - url: http://localhost:8080
     description: Локальный сервер разработки
   - url: http://localhost:80
@@ -27,15 +33,15 @@ servers:
 
 tags:
   - name: Auth
-    description: Аутентификация и профиль пользователя
+    description: Регистрация и аутентификация пользователей
+  - name: Users
+    description: Управление профилем и пользовательскими настройками
   - name: Categories
     description: Управление категориями активностей
-  - name: Timer
-    description: Управление активным таймером
   - name: Records
-    description: Управление записями времени
+    description: Управление записями времени и активными задачами
   - name: History
-    description: История изменений описания записей
+    description: Аудит истории и откат версий записей времени
 
 paths:
   /api/v1/auth/register:
@@ -43,7 +49,7 @@ paths:
       tags:
         - Auth
       summary: Регистрация нового пользователя
-      description: Создает нового пользователя в системе и возвращает токен доступа.
+      description: Создает нового пользователя в системе и возвращает токен доступа и данные созданного профиля с настройками.
       operationId: registerUser
       security: []
       requestBody:
@@ -54,7 +60,7 @@ paths:
               $ref: '#/components/schemas/UserRegistrationRequest'
             examples:
               newUser:
-                summary: Регистрация обычного пользователя
+                summary: Регистрация разработчика
                 value:
                   login: "alex_dev"
                   name: "Алексей Смирнов"
@@ -68,7 +74,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
               examples:
-                success:
+                registered:
                   value:
                     token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                     user:
@@ -85,18 +91,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                duplicateLogin:
+                loginConflict:
                   value:
                     code: "USER_ALREADY_EXISTS"
-                    message: "Пользователь с логином 'alex_dev' уже существует"
+                    message: "Пользователь с логином 'alex_dev' уже зарегистрирован"
                     timestamp: "2026-10-15T10:00:00Z"
 
   /api/v1/auth/login:
     post:
       tags:
         - Auth
-      summary: Аутентификация пользователя
-      description: Проверяет учетные данные и возвращает JWT токен доступа.
+      summary: Аутентификация пользователя (получение токена)
+      description: Проверяет логин и пароль и возвращает Bearer JWT токен для авторизации запросов.
       operationId: loginUser
       security: []
       requestBody:
@@ -142,24 +148,27 @@ paths:
                     message: "Неверный логин или пароль"
                     timestamp: "2026-10-15T10:00:00Z"
 
-  /api/v1/users/me:
+  /api/v1/users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+
     get:
       tags:
-        - Auth
-      summary: Получение данных текущего пользователя
-      description: Возвращает профиль аутентифицированного пользователя по переданному Bearer токену.
-      operationId: getCurrentUser
+        - Users
+      summary: Получение профиля пользователя по ID
+      description: Возвращает данные профиля пользователя (идентификатор, логин, имя, роль). Доступ разрешен владельцу учетной записи либо администратору (роль ADMIN).
+      operationId: getUserById
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Данные текущего пользователя
+          description: Профиль пользователя успешно получен
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
               examples:
-                me:
+                userProfile:
                   value:
                     id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     login: "alex_dev"
@@ -167,13 +176,101 @@ paths:
                     role: "USER"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/users/{userId}/settings:
+    parameters:
+      - $ref: '#/components/parameters/UserIdParam'
+
+    get:
+      tags:
+        - Users
+      summary: Получение настроек пользователя
+      description: Возвращает индивидуальные настройки трекера (пороги длительностей, единицы измерения, авто-остановку) для указанного пользователя.
+      operationId: getUserSettings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Настройки пользователя успешно получены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+              examples:
+                currentSettings:
+                  value:
+                    autoStopEnabled: true
+                    maxActiveDurationValue: 8
+                    maxActiveDurationUnit: "hours"
+                    minDurationEnabled: true
+                    minDurationValue: 1
+                    minDurationUnit: "minutes"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    patch:
+      tags:
+        - Users
+      summary: Частичное обновление настроек пользователя
+      description: Обновляет выбранные параметры трекера пользователя. Доступ разрешен владельцу либо администратору.
+      operationId: updateUserSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettingsUpdateRequest'
+            examples:
+              customUnits:
+                summary: Настройка секундного порога и 12-часового лимита
+                value:
+                  autoStopEnabled: true
+                  maxActiveDurationValue: 12
+                  maxActiveDurationUnit: "hours"
+                  minDurationEnabled: false
+                  minDurationValue: 30
+                  minDurationUnit: "seconds"
+      responses:
+        '200':
+          description: Настройки пользователя успешно обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+              examples:
+                updatedSettings:
+                  value:
+                    autoStopEnabled: true
+                    maxActiveDurationValue: 12
+                    maxActiveDurationUnit: "hours"
+                    minDurationEnabled: false
+                    minDurationValue: 30
+                    minDurationUnit: "seconds"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /api/v1/categories:
     get:
       tags:
         - Categories
       summary: Список доступных категорий
-      description: Возвращает список базовых категорий системы и личных категорий текущего пользователя.
+      description: Возвращает словарь с перечнем базовых категорий системы и личных категорий текущего пользователя в свойстве items.
       operationId: listCategories
       security:
         - bearerAuth: []
@@ -190,31 +287,30 @@ paths:
               - all
       responses:
         '200':
-          description: Список категорий
+          description: Список категорий успешно получен
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Category'
+                $ref: '#/components/schemas/CategoryListResponse'
               examples:
                 categoriesList:
                   value:
-                    - id: "11111111-1111-1111-1111-111111111111"
-                      userId: null
-                      name: "Работа / Проекты"
-                      colorHex: "#3B82F6"
-                      isDefault: true
-                    - id: "22222222-2222-2222-2222-222222222222"
-                      userId: null
-                      name: "Спорт и здоровье"
-                      colorHex: "#10B981"
-                      isDefault: true
-                    - id: "33333333-3333-3333-3333-333333333333"
-                      userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                      name: "Чтение книг"
-                      colorHex: "#8B5CF6"
-                      isDefault: false
+                    items:
+                      - id: "11111111-1111-1111-1111-111111111111"
+                        userId: null
+                        name: "Работа / Проекты"
+                        colorHex: "#3B82F6"
+                        isDefault: true
+                      - id: "22222222-2222-2222-2222-222222222222"
+                        userId: null
+                        name: "Спорт и здоровье"
+                        colorHex: "#10B981"
+                        isDefault: true
+                      - id: "33333333-3333-3333-3333-333333333333"
+                        userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                        name: "Чтение книг"
+                        colorHex: "#8B5CF6"
+                        isDefault: false
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
@@ -224,8 +320,8 @@ paths:
       summary: Создание новой категории
       description: |
         Создает категорию.
-        * Обычный пользователь создает личную категорию (`isDefault: false`, `userId` устанавливается автоматически).
-        * Создание базовой категории (`isDefault: true`) разрешено только пользователям с ролью `ADMIN`.
+        * Обычный пользователь создает личную категорию (isDefault = false, userId устанавливается автоматически).
+        * Создание базовой категории (isDefault = true) разрешено только пользователям с ролью ADMIN.
       operationId: createCategory
       security:
         - bearerAuth: []
@@ -237,17 +333,11 @@ paths:
               $ref: '#/components/schemas/CategoryCreateRequest'
             examples:
               userCategory:
-                summary: Создание личной категории
+                summary: Личная категория
                 value:
-                  name: "Чтение книг"
-                  colorHex: "#8B5CF6"
+                  name: "Английский язык"
+                  colorHex: "#EC4899"
                   isDefault: false
-              baseCategoryAdmin:
-                summary: Создание базовой категории администратором
-                value:
-                  name: "Учеба и курсы"
-                  colorHex: "#F59E0B"
-                  isDefault: true
       responses:
         '201':
           description: Категория успешно создана
@@ -257,7 +347,7 @@ paths:
               schema:
                 type: string
                 examples:
-                  - "/api/v1/categories/33333333-3333-3333-3333-333333333333"
+                  - "/api/v1/categories/55555555-5555-5555-5555-555555555555"
           content:
             application/json:
               schema:
@@ -265,28 +355,38 @@ paths:
               examples:
                 created:
                   value:
-                    id: "33333333-3333-3333-3333-333333333333"
+                    id: "55555555-5555-5555-5555-555555555555"
                     userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                    name: "Чтение книг"
-                    colorHex: "#8B5CF6"
+                    name: "Английский язык"
+                    colorHex: "#EC4899"
                     isDefault: false
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
-          $ref: '#/components/responses/ForbiddenError'
-        '409':
-          description: Категория с таким именем уже существует
+          description: Попытка создания базовой категории без роли ADMIN
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                duplicateCategory:
+                adminRequired:
+                  value:
+                    code: "FORBIDDEN"
+                    message: "Создание базовых категорий разрешено только администраторам"
+                    timestamp: "2026-10-15T10:00:00Z"
+        '409':
+          description: Категория с таким именем уже существует у пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                nameConflict:
                   value:
                     code: "CATEGORY_ALREADY_EXISTS"
-                    message: "Категория с названием 'Чтение книг' уже существует"
+                    message: "Категория с именем 'Английский язык' уже существует"
                     timestamp: "2026-10-15T10:00:00Z"
 
   /api/v1/categories/{categoryId}:
@@ -296,8 +396,8 @@ paths:
     get:
       tags:
         - Categories
-      summary: Получение категории по ID
-      description: Возвращает данные категории по ее уникальному идентификатору.
+      summary: Получение деталей категории по ID
+      description: Возвращает категорию по идентификатору. Доступ разрешен, если категория базовая или принадлежит текущему пользователю.
       operationId: getCategoryById
       security:
         - bearerAuth: []
@@ -309,15 +409,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Category'
               examples:
-                category:
+                categoryDetails:
                   value:
-                    id: "33333333-3333-3333-3333-333333333333"
-                    userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                    name: "Чтение книг"
-                    colorHex: "#8B5CF6"
-                    isDefault: false
+                    id: "11111111-1111-1111-1111-111111111111"
+                    userId: null
+                    name: "Работа / Проекты"
+                    colorHex: "#3B82F6"
+                    isDefault: true
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
 
@@ -326,8 +428,9 @@ paths:
         - Categories
       summary: Полное обновление категории (PUT)
       description: |
-        Полная замена всех полей категории (идемпотентная операция).
-        Личные категории может изменять только владелец; базовые категории — только администратор.
+        Полная замена полей категории (идемпотентная операция).
+        Требует передачи всех обязательных полей (name, colorHex).
+        Редактирование базовых категорий разрешено только администраторам.
       operationId: updateCategory
       security:
         - bearerAuth: []
@@ -338,10 +441,10 @@ paths:
             schema:
               $ref: '#/components/schemas/CategoryUpdateRequest'
             examples:
-              update:
+              fullUpdate:
                 value:
-                  name: "Чтение научной литературы"
-                  colorHex: "#7C3AED"
+                  name: "Научная работа и публикации"
+                  colorHex: "#2563EB"
       responses:
         '200':
           description: Категория успешно обновлена
@@ -354,8 +457,8 @@ paths:
                   value:
                     id: "33333333-3333-3333-3333-333333333333"
                     userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                    name: "Чтение научной литературы"
-                    colorHex: "#7C3AED"
+                    name: "Научная работа и публикации"
+                    colorHex: "#2563EB"
                     isDefault: false
         '400':
           $ref: '#/components/responses/BadRequestError'
@@ -366,7 +469,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
         '409':
-          description: Конфликт уникальности названия категории
+          description: Новое имя категории совпадает с уже существующим
           content:
             application/json:
               schema:
@@ -375,9 +478,8 @@ paths:
     patch:
       tags:
         - Categories
-      summary: Частичное обновление категории
-      description: |
-        Частичное изменение параметров категории (название или цвет).
+      summary: Частичное обновление категории (PATCH)
+      description: Частичное изменение атрибутов категории (например, только цвета или только названия).
       operationId: patchCategory
       security:
         - bearerAuth: []
@@ -388,17 +490,13 @@ paths:
             schema:
               $ref: '#/components/schemas/CategoryPatchRequest'
             examples:
-              patchColorOnly:
-                summary: Обновление только цвета категории
+              changeColorOnly:
+                summary: Обновление только цвета
                 value:
-                  colorHex: "#9333EA"
-              patchNameOnly:
-                summary: Обновление только названия категории
-                value:
-                  name: "Хобби и чтение"
+                  colorHex: "#059669"
       responses:
         '200':
-          description: Категория успешно частично обновлена
+          description: Категория успешно изменена
           content:
             application/json:
               schema:
@@ -408,8 +506,8 @@ paths:
                   value:
                     id: "33333333-3333-3333-3333-333333333333"
                     userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                    name: "Хобби и чтение"
-                    colorHex: "#8B5CF6"
+                    name: "Чтение книг"
+                    colorHex: "#059669"
                     isDefault: false
         '400':
           $ref: '#/components/responses/BadRequestError'
@@ -419,20 +517,26 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Имя конфликтует с существующей категорией
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     delete:
       tags:
         - Categories
       summary: Удаление категории
       description: |
-        Удаляет категорию. Базовые категории может удалять только `ADMIN`. Личные — только создавший пользователь.
-        При удалении связанные записи времени каскадно обновляются/удаляются согласно правилам целостности.
+        Удаляет категорию. Базовые категории может удалять только ADMIN.
+        Связанные записи времени сохраняются, при необходимости категория обнуляется или переназначается.
       operationId: deleteCategory
       security:
         - bearerAuth: []
       responses:
         '204':
-          description: Категория успешно удалена (нет содержимого)
+          description: Категория успешно удалена (нет тела ответа)
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -440,175 +544,28 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
-  /api/v1/timer/active:
-    get:
-      tags:
-        - Timer
-      summary: Получение текущей активной сессии таймера
-      description: |
-        Возвращает данные о запущенном таймере текущего пользователя.
-        Если активный таймер отсутствует, возвращается статус 204 No Content.
-      operationId: getActiveTimer
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Активная сессия таймера найдена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ActiveTimerSession'
-              examples:
-                active:
-                  value:
-                    recordId: "44444444-4444-4444-4444-444444444444"
-                    categoryId: "11111111-1111-1111-1111-111111111111"
-                    categoryName: "Работа / Проекты"
-                    colorHex: "#3B82F6"
-                    startTime: "2026-10-15T10:00:00Z"
-                    elapsedSeconds: 2538
-        '204':
-          description: Активный таймер отсутствует
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-
-  /api/v1/timer/start:
-    post:
-      tags:
-        - Timer
-      summary: Запуск таймера
-      description: |
-        Запускает сессию таймера для указанной категории.
-        У пользователя может быть не более одной активной сессии одновременно.
-      operationId: startTimer
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StartTimerRequest'
-            examples:
-              startSession:
-                value:
-                  categoryId: "11111111-1111-1111-1111-111111111111"
-      responses:
-        '201':
-          description: Таймер успешно запущен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ActiveTimerSession'
-              examples:
-                started:
-                  value:
-                    recordId: "44444444-4444-4444-4444-444444444444"
-                    categoryId: "11111111-1111-1111-1111-111111111111"
-                    categoryName: "Работа / Проекты"
-                    colorHex: "#3B82F6"
-                    startTime: "2026-10-15T10:00:00Z"
-                    elapsedSeconds: 0
-        '400':
-          $ref: '#/components/responses/BadRequestError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Указанная категория не найдена
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                categoryNotFound:
-                  value:
-                    code: "CATEGORY_NOT_FOUND"
-                    message: "Категория с ID '11111111-1111-1111-1111-111111111111' не найдена"
-                    timestamp: "2026-10-15T10:00:00Z"
-        '409':
-          description: У пользователя уже есть активный таймер
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                timerConflict:
-                  value:
-                    code: "TIMER_ALREADY_ACTIVE"
-                    message: "У вас уже запущена сессия таймера для категории 'Работа / Проекты'"
-                    timestamp: "2026-10-15T10:00:00Z"
-
-  /api/v1/timer/stop:
-    post:
-      tags:
-        - Timer
-      summary: Остановка активного таймера
-      description: |
-        Останавливает активный таймер. Если длительность сессии составляет 1 минуту и более, создается запись времени со статусом SAVED. Если менее 1 минуты — сессия завершается со статусом DISCARDED без сохранения в базу данных.
-      operationId: stopTimer
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/StopTimerRequest'
-            examples:
-              stopWithDesc:
-                value:
-                  description: "Проектирование спецификации OpenAPI 3.1"
-      responses:
-        '200':
-          description: Таймер успешно остановлен
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StopTimerResponse'
-              examples:
-                savedRecord:
-                  summary: Сессия успешно сохранена
-                  value:
-                    status: "SAVED"
-                    message: "Сессия таймера успешно сохранена"
-                    record:
-                      id: "44444444-4444-4444-4444-444444444444"
-                      userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                      categoryId: "11111111-1111-1111-1111-111111111111"
-                      startTime: "2026-10-15T10:00:00Z"
-                      endTime: "2026-10-15T10:45:00Z"
-                      description: "Проектирование спецификации OpenAPI 3.1"
-                discardedRecord:
-                  summary: Сессия отброшена (< 1 мин)
-                  value:
-                    status: "DISCARDED"
-                    message: "Сессия длительностью менее 1 минуты отброшена без сохранения"
-                    record: null
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Нет активной сессии таймера для остановки
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                noTimer:
-                  value:
-                    code: "NO_ACTIVE_TIMER"
-                    message: "У вас нет запущенного таймера"
-                    timestamp: "2026-10-15T10:00:00Z"
-
   /api/v1/records:
     get:
       tags:
         - Records
       summary: Список записей времени с фильтрацией и пагинацией
-      description: Возвращает хронологический перечень записей времени текущего пользователя с поддержкой фильтрации по датам и категории.
+      description: |
+        Возвращает перечень записей времени пользователя в объекте со свойством items.
+        Поддерживает фильтрацию по статусу активности (status=active для незавершенных задач, completed для завершенных, all для всех), датам и категории.
       operationId: listRecords
       security:
         - bearerAuth: []
       parameters:
+        - name: status
+          in: query
+          required: false
+          description: Фильтр по состоянию активности задачи
+          schema:
+            type: string
+            enum: [all, active, completed]
+            default: all
+            examples:
+              - all
         - name: from
           in: query
           required: false
@@ -639,18 +596,18 @@ paths:
         - name: limit
           in: query
           required: false
-          description: Максимальное количество записей на страницу
+          description: Максимальное количество записей в ответе
           schema:
             type: integer
             minimum: 1
             maximum: 100
-            default: 50
+            default: 20
             examples:
               - 20
         - name: offset
           in: query
           required: false
-          description: Смещение выборки для пагинации
+          description: Смещение выборки (пагинация)
           schema:
             type: integer
             minimum: 0
@@ -659,27 +616,27 @@ paths:
               - 0
       responses:
         '200':
-          description: Список записей времени
+          description: Страница записей времени успешно получена
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedRecordsResponse'
               examples:
-                records:
+                recordsPage:
                   value:
                     items:
                       - id: "44444444-4444-4444-4444-444444444444"
                         userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                         categoryId: "11111111-1111-1111-1111-111111111111"
                         startTime: "2026-10-15T10:00:00Z"
-                        endTime: "2026-10-15T10:45:00Z"
-                        description: "Проектирование спецификации OpenAPI 3.1"
-                      - id: "55555555-5555-5555-5555-555555555555"
+                        endTime: null
+                        description: "Разработка архитектурного плана и контракта"
+                      - id: "66666666-6666-6666-6666-666666666666"
                         userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                        categoryId: "22222222-2222-2222-2222-222222222222"
-                        startTime: "2026-10-15T12:00:00Z"
-                        endTime: "2026-10-15T12:45:00Z"
-                        description: "Бег в парке"
+                        categoryId: "11111111-1111-1111-1111-111111111111"
+                        startTime: "2026-10-15T08:00:00Z"
+                        endTime: "2026-10-15T09:30:00Z"
+                        description: "Код-ревью и согласование моделей"
                     total: 2
                     limit: 20
                     offset: 0
@@ -691,13 +648,13 @@ paths:
     post:
       tags:
         - Records
-      summary: Создание записи времени
+      summary: Создание записи времени или запуск активной задачи
       description: |
-        Создает запись времени с указанием интервала начала и окончания.
-        Ограничения:
-        * Время начала строго меньше времени окончания.
-        * Минимальная длительность записи — 1 минута.
-        * Интервал не должен пересекаться с существующими записями пользователя.
+        Создает запись активности пользователя.
+        * Если поле endTime не передано или равно null — запускается активная задача.
+        * Разрешено одновременное существование нескольких активных задач (multi-tasking).
+        * Разрешено создание пересекающихся по времени записей.
+        * Если endTime задан, проверяется корректность интервала (endTime > startTime) и соблюдение минимального порога длительности (если включен в настройках).
       operationId: createRecord
       security:
         - bearerAuth: []
@@ -708,7 +665,13 @@ paths:
             schema:
               $ref: '#/components/schemas/TimeRecordCreateRequest'
             examples:
-              manualRecord:
+              startActiveTask:
+                summary: Запуск активной задачи (без endTime)
+                value:
+                  categoryId: "11111111-1111-1111-1111-111111111111"
+                  description: "Разработка новой схемы REST API"
+              completedRecord:
+                summary: Готовая запись с известным интервалом
                 value:
                   categoryId: "11111111-1111-1111-1111-111111111111"
                   startTime: "2026-10-15T14:00:00Z"
@@ -747,20 +710,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: Обнаружено пересечение с существующей записью времени
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                overlap:
-                  value:
-                    code: "TIME_INTERVAL_OVERLAP"
-                    message: "Интервал с 14:00 до 15:30 пересекается с существующей записью '44444444-4444-4444-4444-444444444444' (14:30 - 15:00)"
-                    timestamp: "2026-10-15T10:00:00Z"
         '422':
-          description: Некорректный интервал времени (T_start >= T_end или длительность менее 1 мин)
+          description: Нарушение условий интервала (endTime <= startTime или длительность менее минимального порога)
           content:
             application/json:
               schema:
@@ -771,6 +722,11 @@ paths:
                     code: "INVALID_TIME_RANGE"
                     message: "Время окончания должно быть строго позже времени начала"
                     timestamp: "2026-10-15T10:00:00Z"
+                tooShort:
+                  value:
+                    code: "DURATION_TOO_SHORT"
+                    message: "Длительность записи менее установленного минимального порога"
+                    timestamp: "2026-10-15T10:00:00Z"
 
   /api/v1/records/{recordId}:
     parameters:
@@ -780,7 +736,7 @@ paths:
       tags:
         - Records
       summary: Получение записи времени по ID
-      description: Возвращает данные конкретной записи времени. Доступ разрешен только владельцу записи.
+      description: Возвращает данные конкретной записи времени. Доступ разрешен только владельцу записи либо администратору.
       operationId: getRecordById
       security:
         - bearerAuth: []
@@ -792,7 +748,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TimeRecord'
               examples:
-                record:
+                recordData:
                   value:
                     id: "44444444-4444-4444-4444-444444444444"
                     userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
@@ -813,7 +769,7 @@ paths:
       summary: Полное обновление записи времени (PUT)
       description: |
         Полная замена полей записи времени (идемпотентная операция).
-        При изменении описания старый текст архивируется в историю версий.
+        При изменении любых атрибутов записи (startTime, endTime, categoryId, description) предыдущее состояние автоматически фиксируется в истории изменений.
       operationId: updateRecord
       security:
         - bearerAuth: []
@@ -837,6 +793,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimeRecord'
+              examples:
+                updated:
+                  value:
+                    id: "44444444-4444-4444-4444-444444444444"
+                    userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                    categoryId: "11111111-1111-1111-1111-111111111111"
+                    startTime: "2026-10-15T10:00:00Z"
+                    endTime: "2026-10-15T11:00:00Z"
+                    description: "Проектирование спецификации OpenAPI 3.1 и ревью методов"
         '400':
           $ref: '#/components/responses/BadRequestError'
         '401':
@@ -845,8 +810,8 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
-        '409':
-          description: Обновление вызвало наложение интервалов
+        '422':
+          description: Ошибка валидации временного интервала
           content:
             application/json:
               schema:
@@ -855,10 +820,11 @@ paths:
     patch:
       tags:
         - Records
-      summary: Частичное обновление записи времени (PATCH)
+      summary: Частичное обновление записи времени или остановка задачи (PATCH)
       description: |
-        Частичное изменение полей записи (например, только текста описания).
-        При изменении поля description система автоматически сохраняет предыдущее значение в таблице time_record_history.
+        Частичное изменение полей записи времени (даты, категории или описания).
+        * Простановка endTime в активную задачу переводит её в статус завершенной.
+        * При изменении любых полей текущее состояние автоматически архивируется в виде снимка в истории изменений.
       operationId: patchRecord
       security:
         - bearerAuth: []
@@ -869,17 +835,22 @@ paths:
             schema:
               $ref: '#/components/schemas/TimeRecordPatchRequest'
             examples:
-              updateDescriptionOnly:
-                summary: Изменение только текста описания
+              stopActiveTask:
+                summary: Завершение активной задачи (простановка endTime)
+                value:
+                  endTime: "2026-10-15T10:45:00Z"
+              updateTimeInterval:
+                summary: Корректировка начала и окончания
+                value:
+                  startTime: "2026-10-15T10:05:00Z"
+                  endTime: "2026-10-15T10:50:00Z"
+              changeDescription:
+                summary: Изменение текста описания
                 value:
                   description: "Подготовка ТЗ и согласование контракта REST API"
-              changeCategoryOnly:
-                summary: Изменение только категории
-                value:
-                  categoryId: "22222222-2222-2222-2222-222222222222"
       responses:
         '200':
-          description: Запись времени успешно частично обновлена
+          description: Запись времени успешно обновлена
           content:
             application/json:
               schema:
@@ -901,8 +872,8 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
-        '409':
-          description: Конфликт интервалов при изменении дат
+        '422':
+          description: Ошибка валидации временных рамок
           content:
             application/json:
               schema:
@@ -912,7 +883,7 @@ paths:
       tags:
         - Records
       summary: Удаление записи времени
-      description: Удаляет запись времени и связанные исторические версии описания (каскадно).
+      description: Удаляет запись времени и связанные исторические версии (каскадно).
       operationId: deleteRecord
       security:
         - bearerAuth: []
@@ -933,31 +904,36 @@ paths:
     get:
       tags:
         - History
-      summary: Просмотр истории версий описания записи
-      description: Возвращает хронологический перечень всех предыдущих редакций описания указанной записи времени.
-      operationId: getDescriptionHistory
+      summary: Просмотр истории версий записи времени
+      description: Возвращает хронологический перечень всех предыдущих снимков указанной записи времени (время, категория, описание) в свойстве items.
+      operationId: getRecordHistory
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: История изменений описания получена
+          description: История изменений записи получена
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DescriptionVersion'
+                $ref: '#/components/schemas/RecordHistoryListResponse'
               examples:
                 historyList:
                   value:
-                    - id: "77777777-7777-7777-7777-777777777777"
-                      recordId: "44444444-4444-4444-4444-444444444444"
-                      description: "Проектирование архитектуры и C4"
-                      modifiedAt: "2026-10-15T10:20:00Z"
-                    - id: "88888888-8888-8888-8888-888888888888"
-                      recordId: "44444444-4444-4444-4444-444444444444"
-                      description: "Учеба"
-                      modifiedAt: "2026-10-15T10:05:00Z"
+                    items:
+                      - id: "77777777-7777-7777-7777-777777777777"
+                        recordId: "44444444-4444-4444-4444-444444444444"
+                        categoryId: "11111111-1111-1111-1111-111111111111"
+                        startTime: "2026-10-15T10:00:00Z"
+                        endTime: "2026-10-15T10:45:00Z"
+                        description: "Проектирование архитектуры и C4"
+                        modifiedAt: "2026-10-15T10:20:00Z"
+                      - id: "88888888-8888-8888-8888-888888888888"
+                        recordId: "44444444-4444-4444-4444-444444444444"
+                        categoryId: "11111111-1111-1111-1111-111111111111"
+                        startTime: "2026-10-15T10:00:00Z"
+                        endTime: null
+                        description: "Начальное описание задачи"
+                        modifiedAt: "2026-10-15T10:05:00Z"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -971,26 +947,27 @@ paths:
       - name: versionId
         in: path
         required: true
-        description: Уникальный идентификатор исторической версии описания для отката
+        description: Уникальный идентификатор исторической версии записи для отката
         schema:
           type: string
           format: uuid
-          examples:
-            - "88888888-8888-8888-8888-888888888888"
+        examples:
+          sampleVersion:
+            value: "88888888-8888-8888-8888-888888888888"
 
     post:
       tags:
         - History
-      summary: Восстановление описания записи из истории
+      summary: Восстановление состояния записи из истории
       description: |
-        Восстанавливает описание записи из указанной исторической версии.
-        Текущее описание сохраняется в историю как новый снимок перед применением изменений.
-      operationId: rollbackDescription
+        Восстанавливает поля записи (startTime, endTime, categoryId, description) из указанного исторического снимка.
+        Текущее состояние записи перед применением изменений архивируется в историю как новый снимок (Forward-only audit).
+      operationId: rollbackRecordVersion
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Описание успешно откачено к версии
+          description: Запись успешно откачена к целевой версии
           content:
             application/json:
               schema:
@@ -1003,7 +980,7 @@ paths:
                     categoryId: "11111111-1111-1111-1111-111111111111"
                     startTime: "2026-10-15T10:00:00Z"
                     endTime: "2026-10-15T10:45:00Z"
-                    description: "Учеба"
+                    description: "Проектирование архитектуры и C4"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -1018,7 +995,7 @@ paths:
                 versionNotFound:
                   value:
                     code: "VERSION_NOT_FOUND"
-                    message: "Версия описания с ID '88888888-8888-8888-8888-888888888888' не найдена для данной записи"
+                    message: "Историческая версия с ID '88888888-8888-8888-8888-888888888888' не найдена"
                     timestamp: "2026-10-15T10:00:00Z"
 
 components:
@@ -1030,6 +1007,18 @@ components:
       description: JWT токен авторизации в формате `Bearer <token>`
 
   parameters:
+    UserIdParam:
+      name: userId
+      in: path
+      required: true
+      description: Уникальный идентификатор пользователя (UUID)
+      schema:
+        type: string
+        format: uuid
+      examples:
+        defaultUser:
+          value: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
     CategoryIdParam:
       name: categoryId
       in: path
@@ -1038,8 +1027,9 @@ components:
       schema:
         type: string
         format: uuid
-        examples:
-          - "33333333-3333-3333-3333-333333333333"
+      examples:
+        sampleCategory:
+          value: "33333333-3333-3333-3333-333333333333"
 
     RecordIdParam:
       name: recordId
@@ -1049,8 +1039,9 @@ components:
       schema:
         type: string
         format: uuid
-        examples:
-          - "44444444-4444-4444-4444-444444444444"
+      examples:
+        sampleRecord:
+          value: "44444444-4444-4444-4444-444444444444"
 
   responses:
     BadRequestError:
@@ -1080,7 +1071,7 @@ components:
                 timestamp: "2026-10-15T10:00:00Z"
 
     ForbiddenError:
-      description: Недостаточно прав для выполнения операции (например, попытка изменения чужой записи или создание базовой категории без роли ADMIN)
+      description: Недостаточно прав для выполнения операции (попытка изменения чужого ресурса или управление базовыми категориями без роли ADMIN)
       content:
         application/json:
           schema:
@@ -1106,6 +1097,92 @@ components:
                 timestamp: "2026-10-15T10:00:00Z"
 
   schemas:
+    DurationUnit:
+      type: string
+      enum:
+        - seconds
+        - minutes
+        - hours
+        - days
+      description: Единица измерения продолжительности времени
+      examples:
+        - minutes
+
+    UserSettings:
+      type: object
+      required:
+        - autoStopEnabled
+        - maxActiveDurationValue
+        - maxActiveDurationUnit
+        - minDurationEnabled
+        - minDurationValue
+        - minDurationUnit
+      properties:
+        autoStopEnabled:
+          type: boolean
+          description: Флаг автоматической остановки активных задач при превышении максимальной длительности
+          examples:
+            - true
+        maxActiveDurationValue:
+          type: integer
+          minimum: 1
+          description: Числовое значение максимальной длительности активной задачи
+          examples:
+            - 8
+        maxActiveDurationUnit:
+          $ref: '#/components/schemas/DurationUnit'
+          examples:
+            - hours
+        minDurationEnabled:
+          type: boolean
+          description: Флаг отклонения записей короче установленного минимального порога
+          examples:
+            - true
+        minDurationValue:
+          type: integer
+          minimum: 1
+          description: Числовое значение минимальной длительности сохраняемой записи
+          examples:
+            - 1
+        minDurationUnit:
+          $ref: '#/components/schemas/DurationUnit'
+          examples:
+            - minutes
+
+    UserSettingsUpdateRequest:
+      type: object
+      properties:
+        autoStopEnabled:
+          type: boolean
+          description: Флаг автоматической остановки активных задач
+          examples:
+            - true
+        maxActiveDurationValue:
+          type: integer
+          minimum: 1
+          description: Числовое значение максимальной длительности
+          examples:
+            - 12
+        maxActiveDurationUnit:
+          $ref: '#/components/schemas/DurationUnit'
+          examples:
+            - hours
+        minDurationEnabled:
+          type: boolean
+          description: Флаг проверки минимальной длительности
+          examples:
+            - false
+        minDurationValue:
+          type: integer
+          minimum: 1
+          description: Числовое значение минимальной длительности
+          examples:
+            - 30
+        minDurationUnit:
+          $ref: '#/components/schemas/DurationUnit'
+          examples:
+            - seconds
+
     User:
       type: object
       required:
@@ -1254,6 +1331,17 @@ components:
           examples:
             - false
 
+    CategoryListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Список категорий
+          items:
+            $ref: '#/components/schemas/Category'
+
     CategoryCreateRequest:
       type: object
       required:
@@ -1347,7 +1435,7 @@ components:
         startTime:
           type: string
           format: date-time
-          description: Время начала сессии (ISO-8601)
+          description: Время начала активности (ISO-8601)
           examples:
             - "2026-10-15T10:00:00Z"
         endTime:
@@ -1355,7 +1443,7 @@ components:
             - string
             - "null"
           format: date-time
-          description: Время окончания сессии (ISO-8601, null если сессия активна)
+          description: Время окончания активности (ISO-8601, null если задача активна)
           examples:
             - "2026-10-15T10:45:00Z"
         description:
@@ -1369,9 +1457,6 @@ components:
       type: object
       required:
         - categoryId
-        - startTime
-        - endTime
-        - description
       properties:
         categoryId:
           type: string
@@ -1382,19 +1467,21 @@ components:
         startTime:
           type: string
           format: date-time
-          description: Время начала интервала (ISO-8601)
+          description: Время начала активности (ISO-8601, по умолчанию текущее серверное время)
           examples:
             - "2026-10-15T14:00:00Z"
         endTime:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          description: Время окончания интервала (ISO-8601)
+          description: Время окончания (ISO-8601, null или не передано для старта активной задачи)
           examples:
             - "2026-10-15T15:30:00Z"
         description:
           type: string
-          minLength: 1
           maxLength: 1000
+          default: ""
           description: Описание активности
           examples:
             - "Разработка API контроллеров и тестов"
@@ -1404,7 +1491,6 @@ components:
       required:
         - categoryId
         - startTime
-        - endTime
         - description
       properties:
         categoryId:
@@ -1416,20 +1502,21 @@ components:
         startTime:
           type: string
           format: date-time
-          description: Время начала интервала
+          description: Время начала активности
           examples:
             - "2026-10-15T10:00:00Z"
         endTime:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          description: Время окончания интервала
+          description: Время окончания активности (null если активность продолжается)
           examples:
             - "2026-10-15T11:00:00Z"
         description:
           type: string
-          minLength: 1
           maxLength: 1000
-          description: Новое описание
+          description: Описание активности
           examples:
             - "Проектирование спецификации OpenAPI 3.1 и ревью методов"
 
@@ -1445,19 +1532,21 @@ components:
         startTime:
           type: string
           format: date-time
-          description: Новое время начала
+          description: Новое время начала активности
           examples:
             - "2026-10-15T10:05:00Z"
         endTime:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          description: Новое время окончания
+          description: Новое время окончания (установка значения фиксирует завершение активности)
           examples:
             - "2026-10-15T10:50:00Z"
         description:
           type: string
           maxLength: 1000
-          description: Новое описание (архивирует предыдущий текст в историю)
+          description: Новое описание активности
           examples:
             - "Подготовка ТЗ и согласование контракта REST API"
 
@@ -1489,108 +1578,20 @@ components:
           examples:
             - 0
 
-    ActiveTimerSession:
-      type: object
-      required:
-        - recordId
-        - categoryId
-        - categoryName
-        - colorHex
-        - startTime
-        - elapsedSeconds
-      properties:
-        recordId:
-          type: string
-          format: uuid
-          description: Идентификатор активной записи
-          examples:
-            - "44444444-4444-4444-4444-444444444444"
-        categoryId:
-          type: string
-          format: uuid
-          description: Идентификатор категории
-          examples:
-            - "11111111-1111-1111-1111-111111111111"
-        categoryName:
-          type: string
-          description: Название категории
-          examples:
-            - "Работа / Проекты"
-        colorHex:
-          type: string
-          pattern: "^#[0-9A-Fa-f]{6}$"
-          description: Цвет категории
-          examples:
-            - "#3B82F6"
-        startTime:
-          type: string
-          format: date-time
-          description: Время запуска таймера
-          examples:
-            - "2026-10-15T10:00:00Z"
-        elapsedSeconds:
-          type: integer
-          description: Количество прошедших секунд с момента старта
-          examples:
-            - 2538
-
-    StartTimerRequest:
-      type: object
-      required:
-        - categoryId
-      properties:
-        categoryId:
-          type: string
-          format: uuid
-          description: ID категории для трекинга
-          examples:
-            - "11111111-1111-1111-1111-111111111111"
-
-    StopTimerRequest:
-      type: object
-      properties:
-        description:
-          type: string
-          maxLength: 1000
-          description: Опциональное описание завершенной активности
-          examples:
-            - "Проектирование спецификации OpenAPI 3.1"
-
-    StopTimerResponse:
-      type: object
-      required:
-        - status
-        - message
-      properties:
-        status:
-          type: string
-          enum: [SAVED, DISCARDED]
-          description: Результат завершения сессии (SAVED — сохранена в базу, DISCARDED — длительность менее 1 минуты, сессия аннулирована)
-          examples:
-            - SAVED
-        message:
-          type: string
-          description: Текстовое пояснение результата операции
-          examples:
-            - "Сессия таймера успешно сохранена"
-        record:
-          anyOf:
-            - $ref: '#/components/schemas/TimeRecord'
-            - type: "null"
-          description: Сохраненная запись времени (null, если статус DISCARDED)
-
-    DescriptionVersion:
+    RecordHistoryEntry:
       type: object
       required:
         - id
         - recordId
+        - categoryId
+        - startTime
         - description
         - modifiedAt
       properties:
         id:
           type: string
           format: uuid
-          description: Уникальный идентификатор исторической версии
+          description: Уникальный идентификатор исторического снимка
           examples:
             - "77777777-7777-7777-7777-777777777777"
         recordId:
@@ -1599,17 +1600,48 @@ components:
           description: Идентификатор записи времени
           examples:
             - "44444444-4444-4444-4444-444444444444"
+        categoryId:
+          type: string
+          format: uuid
+          description: ID категории на момент создания снимка
+          examples:
+            - "11111111-1111-1111-1111-111111111111"
+        startTime:
+          type: string
+          format: date-time
+          description: Время начала записи на момент создания снимка
+          examples:
+            - "2026-10-15T10:00:00Z"
+        endTime:
+          type:
+            - string
+            - "null"
+          format: date-time
+          description: Время окончания записи на момент снимка (null если задача была активна)
+          examples:
+            - "2026-10-15T10:45:00Z"
         description:
           type: string
-          description: Исторический текст описания
+          description: Текст описания на момент создания снимка
           examples:
             - "Проектирование архитектуры и C4"
         modifiedAt:
           type: string
           format: date-time
-          description: Метка времени, когда описание было изменено и заархивировано
+          description: Метка времени, когда состояние записи было изменено и заархивировано
           examples:
             - "2026-10-15T10:20:00Z"
+
+    RecordHistoryListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Список исторических снимков записи
+          items:
+            $ref: '#/components/schemas/RecordHistoryEntry'
 
     ErrorResponse:
       type: object
