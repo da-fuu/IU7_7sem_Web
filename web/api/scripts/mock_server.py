@@ -309,7 +309,11 @@ class TimeTrackerMockHandler(BaseHTTPRequestHandler):
             simulate_short = body.get("simulateShort", False)
             if simulate_short:
                 TimeTrackerMockHandler.active_timer = None
-                self._send_error(422, "SESSION_TOO_SHORT", "Длительность сессии менее 1 минуты (зафиксировано 15 с). Запись отклонена.")
+                self._send_json(200, {
+                    "status": "DISCARDED",
+                    "message": "Сессия длительностью менее 1 минуты отброшена без сохранения",
+                    "record": None
+                })
                 return
             rec_id = TimeTrackerMockHandler.active_timer["recordId"]
             cat_id = TimeTrackerMockHandler.active_timer["categoryId"]
@@ -326,7 +330,11 @@ class TimeTrackerMockHandler(BaseHTTPRequestHandler):
             }
             self.records[rec_id] = rec_obj
             TimeTrackerMockHandler.active_timer = None
-            self._send_json(200, rec_obj)
+            self._send_json(200, {
+                "status": "SAVED",
+                "message": "Сессия таймера успешно сохранена",
+                "record": rec_obj
+            })
             return
 
         if path == "/api/v1/records":

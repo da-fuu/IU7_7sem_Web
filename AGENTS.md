@@ -53,7 +53,8 @@
 
 ## 4. Ссылки на требования, контракты и ADR
 
-- **Требования к текущей лабораторной**: [README.md (WebLab#1)](README.md)
+- **Требования к WebLab#1**: [README.md (WebLab#1)](README.md)
+- **Спецификация REST API и контракт (WebLab#2)**: [web/api/README.md](web/api/README.md) и [web/api/openapi.yaml](web/api/openapi.yaml)
 - **Анализ исходного проекта ППО**: [AI_ANALYSIS.md](AI_ANALYSIS.md)
 - **Архитектурные решения (ADR)**:
   - [ADR-001: Выбор стека веб-бэкенда и интеграция с ядром domain](docs/adr/ADR-001-backend-stack.md)
@@ -123,12 +124,12 @@ IU7_7sem_web/
   # Результат: dist/tech_ui_dex.jar
   ```
 
-### 6.2. Планируемые команды для Web-лабораторных
+### 6.2. Команды для Web-лабораторных
 
-| Этап / Модуль | Команда | Назначение |
-| :--- | :--- | :--- |
-| **WebLab#2** | `npx @stoplight/spectral-cli lint web/api/openapi.yaml` | Линтинг OpenAPI контракта |
-| **WebLab#2** | `npx @stoplight/prism-cli mock web/api/openapi.yaml -p 4010` | Запуск mock-сервера по контракту |
+| **WebLab#2** | `docker run --rm -v $(pwd):/spec -w /spec redocly/cli lint web/api/openapi.yaml` | Индустриальный линтинг схемы (Redocly CLI) |
+| **WebLab#2** | `openapi-spec-validator web/api/openapi.yaml` | Валидация спецификации (OpenAPI Spec Validator) |
+| **WebLab#2** | `python3 web/api/scripts/mock_server.py 4010` | Запуск Mock-сервера по контракту |
+| **WebLab#2** | `python3 web/api/scripts/test_scenario.py` | Сквозной тест пользовательских сценариев (15 шагов) |
 | **WebLab#3** | `./gradlew :web:backend:test` | Запуск тестов REST API сервиса |
 | **WebLab#3** | `./gradlew :web:backend:run` | Локальный запуск Web API сервиса |
 | **WebLab#4** | `docker compose -f deploy/docker-compose.yml up --build -d` | Развертывание Nginx + Web App + DB |
@@ -144,5 +145,9 @@ IU7_7sem_web/
 1. При выполнении **WebLab#1**:
    - Разрешено: редактирование `README.md`, `AGENTS.md`, `AI_REVIEW.md`, файлов в `docs/`.
    - Запрещено: модификация рабочего кода модулей `:domain`, `:data`, `:tech_ui`, ломающая легаси-функционал.
-2. При переходе к **WebLab#2**:
+2. При выполнении **WebLab#2**:
+   - Разрешено: `web/api/openapi.yaml`, `web/api/README.md`, `web/api/scripts/*`, `AI_REVIEW.md`, `AGENTS.md`.
    - Контракт проектируется в файле `web/api/openapi.yaml` на основе согласованных сущностей и сценариев из `README.md`.
+   - Запрещено: реализация факультативных допов (GraphQL и т.д.), коммиты с невалидными примерами схемы.
+3. При переходе к **WebLab#3**:
+   - Реализация REST API сервиса в модуле `:web:backend` на Kotlin/Ktor строго по контракту `web/api/openapi.yaml`.

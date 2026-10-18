@@ -133,11 +133,13 @@ def run_tests():
         stop_payload = {"description": "Утренняя тренировка и разминка"}
         res = requests.post(f"{BASE_URL}/api/v1/timer/stop", headers=headers, json=stop_payload)
         assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
-        saved_rec = res.json()
+        stop_res = res.json()
+        assert stop_res["status"] == "SAVED"
+        saved_rec = stop_res["record"]
         assert saved_rec["id"] == active_rec_id
         assert saved_rec["description"] == stop_payload["description"]
         assert saved_rec["endTime"] is not None
-        print(f"  -> SUCCESS (200 OK): Timer stopped, record saved in database")
+        print(f"  -> SUCCESS (200 OK, status=SAVED): Timer stopped, record saved in database")
         passed_steps += 1
 
         # Step 10: Create Manual Record
@@ -194,16 +196,17 @@ def run_tests():
         print(f"  -> SUCCESS (204 No Content): Custom category deleted")
         passed_steps += 1
 
-        # Step 15: Business Rule Check — Minimum Duration Rejection (422 Unprocessable Entity)
-        print("\n[Step 15] Business Rule Validation: Min Duration (< 1 min) Rejection")
+        # Step 15: Business Rule Check — Minimum Duration Handling (200 OK with status DISCARDED)
+        print("\n[Step 15] Business Rule Validation: Short Session (< 1 min) Discarding")
         # Start a quick session
         requests.post(f"{BASE_URL}/api/v1/timer/start", headers=headers, json={"categoryId": "11111111-1111-1111-1111-111111111111"})
         # Stop with simulateShort
         res = requests.post(f"{BASE_URL}/api/v1/timer/stop", headers=headers, json={"simulateShort": True})
-        assert res.status_code == 422, f"Expected 422 Unprocessable Entity, got {res.status_code}: {res.text}"
-        short_err = res.json()
-        assert short_err["code"] == "SESSION_TOO_SHORT"
-        print(f"  -> SUCCESS (422 Unprocessable Entity): Short session rejected as random click ('{short_err['code']}')")
+        assert res.status_code == 200, f"Expected 200 OK, got {res.status_code}: {res.text}"
+        short_res = res.json()
+        assert short_res["status"] == "DISCARDED"
+        assert short_res["record"] is None
+        print(f"  -> SUCCESS (200 OK, status=DISCARDED): Short session stopped and discarded without saving")
         passed_steps += 1
 
         print("\n" + "=" * 70)

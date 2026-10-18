@@ -544,8 +544,7 @@ paths:
         - Timer
       summary: Остановка активного таймера
       description: |
-        Останавливает активный таймер и сохраняет запись времени.
-        Сессии длительностью менее 1 минуты отклоняются (код 422) и не сохраняются.
+        Останавливает активный таймер. Если длительность сессии составляет 1 минуту и более, создается запись времени со статусом SAVED. Если менее 1 минуты — сессия завершается со статусом DISCARDED без сохранения в базу данных.
       operationId: stopTimer
       security:
         - bearerAuth: []
@@ -561,20 +560,30 @@ paths:
                   description: "Проектирование спецификации OpenAPI 3.1"
       responses:
         '200':
-          description: Таймер успешно остановлен, запись сохранена
+          description: Таймер успешно остановлен
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TimeRecord'
+                $ref: '#/components/schemas/StopTimerResponse'
               examples:
                 savedRecord:
+                  summary: Сессия успешно сохранена
                   value:
-                    id: "44444444-4444-4444-4444-444444444444"
-                    userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-                    categoryId: "11111111-1111-1111-1111-111111111111"
-                    startTime: "2026-10-15T10:00:00Z"
-                    endTime: "2026-10-15T10:45:00Z"
-                    description: "Проектирование спецификации OpenAPI 3.1"
+                    status: "SAVED"
+                    message: "Сессия таймера успешно сохранена"
+                    record:
+                      id: "44444444-4444-4444-4444-444444444444"
+                      userId: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+                      categoryId: "11111111-1111-1111-1111-111111111111"
+                      startTime: "2026-10-15T10:00:00Z"
+                      endTime: "2026-10-15T10:45:00Z"
+                      description: "Проектирование спецификации OpenAPI 3.1"
+                discardedRecord:
+                  summary: Сессия отброшена (< 1 мин)
+                  value:
+                    status: "DISCARDED"
+                    message: "Сессия длительностью менее 1 минуты отброшена без сохранения"
+                    record: null
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '404':
@@ -589,18 +598,6 @@ paths:
                     code: "NO_ACTIVE_TIMER"
                     message: "У вас нет запущенного таймера"
                     timestamp: "2026-10-15T10:00:00Z"
-        '422':
-          description: Сессия таймера слишком короткая (менее 1 минуты)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                tooShort:
-                  value:
-                    code: "SESSION_TOO_SHORT"
-                    message: "Длительность сессии менее 1 минуты (зафиксировано 25 с). Запись отклонена."
-                    timestamp: "2026-10-15T10:00:25Z"
 
   /api/v1/records:
     get:
@@ -1558,6 +1555,29 @@ components:
           description: Опциональное описание завершенной активности
           examples:
             - "Проектирование спецификации OpenAPI 3.1"
+
+    StopTimerResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [SAVED, DISCARDED]
+          description: Результат завершения сессии (SAVED — сохранена в базу, DISCARDED — длительность менее 1 минуты, сессия аннулирована)
+          examples:
+            - SAVED
+        message:
+          type: string
+          description: Текстовое пояснение результата операции
+          examples:
+            - "Сессия таймера успешно сохранена"
+        record:
+          anyOf:
+            - $ref: '#/components/schemas/TimeRecord'
+            - type: "null"
+          description: Сохраненная запись времени (null, если статус DISCARDED)
 
     DescriptionVersion:
       type: object
