@@ -9,6 +9,7 @@ interface ICategoryRepository {
     fun getCategoriesFlow(userId: UserId): Flow<List<Category>>
     suspend fun saveCategory(category: Category): Result<Unit>
     suspend fun findCategoryByName(userId: UserId?, name: String): Category?
+    suspend fun findCategoryById(categoryId: CategoryId): Category? = null
     suspend fun deleteCategory(categoryId: CategoryId): Result<Unit>
     suspend fun getAllCategories(): List<Category>
 }

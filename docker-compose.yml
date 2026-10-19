@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: timetracker-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-timetracker}
+      POSTGRES_USER: ${POSTGRES_USER:-timetracker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-timetracker_pass}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./deploy/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-timetracker} -d ${POSTGRES_DB:-timetracker}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: web/backend/Dockerfile
+    container_name: timetracker-backend
+    restart: always
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-timetracker}
+      DB_USER: ${POSTGRES_USER:-timetracker}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-timetracker_pass}
+      JWT_SECRET: ${JWT_SECRET:-timetracker_super_secret_jwt_key_2026}
+      PORT: 8080
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

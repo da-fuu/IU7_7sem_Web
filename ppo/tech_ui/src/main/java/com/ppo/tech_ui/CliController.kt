@@ -3,6 +3,8 @@ package com.ppo.tech_ui
 import com.ppo.domain.model.*
 import com.ppo.domain.repository.IUserRepository
 import com.ppo.domain.usecase.*
+import com.ppo.data.api.JsonMini
+import com.ppo.data.api.RestApiClient
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.Instant
@@ -25,7 +27,8 @@ class CliController(
     private val adminDeleteBaseCategoryUseCase: AdminDeleteBaseCategoryUseCase,
     private val updateRecordDescriptionUseCase: UpdateRecordDescriptionUseCase,
     private val rollbackRecordDescriptionUseCase: RollbackRecordDescriptionUseCase,
-    private val getDescriptionHistoryUseCase: GetDescriptionHistoryUseCase
+    private val getDescriptionHistoryUseCase: GetDescriptionHistoryUseCase,
+    private val apiClient: RestApiClient? = null
 ) {
     private val logger = LoggerFactory.getLogger(CliController::class.java)
 
@@ -73,8 +76,24 @@ class CliController(
             return
         }
         val role = if (args.getOrNull(3)?.uppercase() == "ADMIN") UserRole.ADMIN else UserRole.USER
-        val result = registerUseCase(args[0], args[1], args[2], role)
+        if (apiClient != null) {
+            val json = """{"login":"${args[0]}","name":"${args[1]}","password":"${args[2]}","role":"${role.name}"}"""
+            val res = apiClient.request("POST", "/auth/register", json)
+            if (res.statusCode in 200..299) {
+                val map = JsonMini.parseObject(res.body)
+                val token = map["token"] as? String
+                val userMap = map["user"] as? Map<*, *>
+                val id = userMap?.get("id") as? String
+                if (token != null) apiClient.saveToken(token)
+                if (id != null) sessionFile.writeText(id)
+                println("Success: User registered")
+            } else {
+                println("Error: ${res.body}")
+            }
+            return
+        }
 
+        val result = registerUseCase(args[0], args[1], args[2], role)
         result.onSuccess { println("Success: User registered") }
             .onFailure { println("Error: ${it.message}") }
     }
@@ -84,6 +103,24 @@ class CliController(
             println("Usage: login <login> <password>")
             return
         }
+        if (apiClient != null) {
+            val json = """{"login":"${args[0]}","password":"${args[1]}"}"""
+            val res = apiClient.request("POST", "/auth/login", json)
+            if (res.statusCode in 200..299) {
+                val map = JsonMini.parseObject(res.body)
+                val token = map["token"] as? String
+                val userMap = map["user"] as? Map<*, *>
+                val id = userMap?.get("id") as? String
+                val name = userMap?.get("name") as? String ?: args[0]
+                if (token != null) apiClient.saveToken(token)
+                if (id != null) sessionFile.writeText(id)
+                println("Success: Welcome, $name")
+            } else {
+                println("Error: ${res.body}")
+            }
+            return
+        }
+
         val result = loginUseCase(args[0], args[1])
         result.onSuccess { user ->
             sessionFile.writeText(user.id.value.toString())
@@ -94,6 +131,7 @@ class CliController(
     }
 
     private fun handleLogout() {
+        apiClient?.clearToken()
         if (sessionFile.exists()) {
             sessionFile.delete()
             println("Success: Logged out")

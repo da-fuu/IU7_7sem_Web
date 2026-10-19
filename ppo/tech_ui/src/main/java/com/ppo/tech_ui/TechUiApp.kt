@@ -69,6 +69,12 @@ fun main(args: Array<String>) {
 
     val logger = LoggerFactory.getLogger("TechUiApp")
     logger.info("Starting TimeTracker CLI with log level: {} and path: {}", logLevel, logPath)
+    val envApiUrl = System.getenv("TIMETRACKER_API_URL")
+    val propApiUrl = properties.getProperty("api.url")
+    val isApiArg = args.firstOrNull() == "--api"
+    val cleanArgs = if (isApiArg) args.drop(1).toTypedArray() else args
+    val apiUrl = envApiUrl ?: propApiUrl ?: if (isApiArg) "http://localhost:8080/api/v1" else null
+
     val envDbPath = System.getenv("TIMETRACKER_DB_PATH")
     val propDbPath = properties.getProperty("db.path")
     val defaultDbPath = File(System.getProperty("user.home"), ".timetracker/timetracker.db").absolutePath
@@ -85,77 +91,126 @@ fun main(args: Array<String>) {
     val dynamicModule = module {
         single { businessConfig }
 
-        single(named("db_file")) {
-            val dbFile = File(dbPath)
-            val appDir = dbFile.parentFile
-            if (appDir != null && !appDir.exists()) appDir.mkdirs()
-            dbFile
-        }
+        if (apiUrl != null) {
+            val sessionFile = File(System.getProperty("user.home"), ".timetracker/session.txt").apply { parentFile?.mkdirs() }
+            val client = com.ppo.data.api.RestApiClient(apiUrl, sessionFile)
 
-        single(named("session_file")) { File(get<File>(named("db_file")).parentFile, "session.txt") }
+            single(named("session_file")) { sessionFile }
+            single<IUserRepository> { com.ppo.data.api.ApiUserRepository(client) }
+            single<ICategoryRepository> { com.ppo.data.api.ApiCategoryRepository(client) }
+            single<ITimeRecordRepository> { com.ppo.data.api.ApiTimeRecordRepository(client) }
+            single<IPasswordHasher> { PasswordHasherImpl() }
 
-        single {
-            val dbFile = get<File>(named("db_file"))
-            val driver = createSQLiteDriver()
+            factoryOf(::RegisterUserUseCase)
+            factoryOf(::LoginUserUseCase)
+            factoryOf(::GetUserInfoUseCase)
+            factoryOf(::StartTimerUseCase)
+            factoryOf(::StopTimerUseCase)
+            factoryOf(::AddManualRecordUseCase)
+            factoryOf(::AdminManageBaseCategoryUseCase)
+            factoryOf(::ManageUserCategoryUseCase)
+            factoryOf(::GetCategoriesUseCase)
+            factoryOf(::GetTimeRecordsUseCase)
+            factoryOf(::DeleteCategoryUseCase)
+            factoryOf(::AdminDeleteBaseCategoryUseCase)
+            factoryOf(::UpdateRecordDescriptionUseCase)
+            factoryOf(::RollbackRecordDescriptionUseCase)
+            factoryOf(::GetDescriptionHistoryUseCase)
 
-            Room.databaseBuilder<AppDatabase>(
-                name = dbFile.absolutePath,
-                factory = {
-                    Class.forName("com.ppo.data.db.AppDatabase_Impl")
-                        .getDeclaredConstructor()
-                        .newInstance() as AppDatabase
-                }
-            )
-                .setDriver(driver)
-                .fallbackToDestructiveMigration(true)
-                .setQueryCoroutineContext(Dispatchers.IO)
-                .build()
-        }
+            single {
+                CliController(
+                    sessionFile = get(named("session_file")),
+                    userRepository = get(),
+                    registerUseCase = get(),
+                    loginUseCase = get(),
+                    startTimerUseCase = get(),
+                    stopTimerUseCase = get(),
+                    addManualRecordUseCase = get(),
+                    adminManageBaseCategoryUseCase = get(),
+                    manageUserCategoryUseCase = get(),
+                    getCategoriesUseCase = get(),
+                    getTimeRecordsUseCase = get(),
+                    deleteCategoryUseCase = get(),
+                    adminDeleteBaseCategoryUseCase = get(),
+                    updateRecordDescriptionUseCase = get(),
+                    rollbackRecordDescriptionUseCase = get(),
+                    getDescriptionHistoryUseCase = get(),
+                    apiClient = client
+                )
+            }
+        } else {
+            single(named("db_file")) {
+                val dbFile = File(dbPath)
+                val appDir = dbFile.parentFile
+                if (appDir != null && !appDir.exists()) appDir.mkdirs()
+                dbFile
+            }
 
-        single { get<AppDatabase>().userDao() }
-        single { get<AppDatabase>().categoryDao() }
-        single { get<AppDatabase>().timeRecordDao() }
-        single { get<AppDatabase>().timeRecordHistoryDao() }
-        single<IUserRepository> { UserRepositoryImpl(get()) }
-        single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
-        single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get(), get()) }
-        single<IPasswordHasher> { PasswordHasherImpl() }
+            single(named("session_file")) { File(get<File>(named("db_file")).parentFile, "session.txt") }
 
-        factoryOf(::RegisterUserUseCase)
-        factoryOf(::LoginUserUseCase)
-        factoryOf(::GetUserInfoUseCase)
-        factoryOf(::StartTimerUseCase)
-        factoryOf(::StopTimerUseCase)
-        factoryOf(::AddManualRecordUseCase)
-        factoryOf(::AdminManageBaseCategoryUseCase)
-        factoryOf(::ManageUserCategoryUseCase)
-        factoryOf(::GetCategoriesUseCase)
-        factoryOf(::GetTimeRecordsUseCase)
-        factoryOf(::DeleteCategoryUseCase)
-        factoryOf(::AdminDeleteBaseCategoryUseCase)
-        factoryOf(::UpdateRecordDescriptionUseCase)
-        factoryOf(::RollbackRecordDescriptionUseCase)
-        factoryOf(::GetDescriptionHistoryUseCase)
+            single {
+                val dbFile = get<File>(named("db_file"))
+                val driver = createSQLiteDriver()
 
-        single {
-            CliController(
-                sessionFile = get(named("session_file")),
-                userRepository = get(),
-                registerUseCase = get(),
-                loginUseCase = get(),
-                startTimerUseCase = get(),
-                stopTimerUseCase = get(),
-                addManualRecordUseCase = get(),
-                adminManageBaseCategoryUseCase = get(),
-                manageUserCategoryUseCase = get(),
-                getCategoriesUseCase = get(),
-                getTimeRecordsUseCase = get(),
-                deleteCategoryUseCase = get(),
-                adminDeleteBaseCategoryUseCase = get(),
-                updateRecordDescriptionUseCase = get(),
-                rollbackRecordDescriptionUseCase = get(),
-                getDescriptionHistoryUseCase = get()
-            )
+                Room.databaseBuilder<AppDatabase>(
+                    name = dbFile.absolutePath,
+                    factory = {
+                        Class.forName("com.ppo.data.db.AppDatabase_Impl")
+                            .getDeclaredConstructor()
+                            .newInstance() as AppDatabase
+                    }
+                )
+                    .setDriver(driver)
+                    .fallbackToDestructiveMigration(true)
+                    .setQueryCoroutineContext(Dispatchers.IO)
+                    .build()
+            }
+
+            single { get<AppDatabase>().userDao() }
+            single { get<AppDatabase>().categoryDao() }
+            single { get<AppDatabase>().timeRecordDao() }
+            single { get<AppDatabase>().timeRecordHistoryDao() }
+            single<IUserRepository> { UserRepositoryImpl(get()) }
+            single<ICategoryRepository> { CategoryRepositoryImpl(get()) }
+            single<ITimeRecordRepository> { TimeRecordRepositoryImpl(get(), get()) }
+            single<IPasswordHasher> { PasswordHasherImpl() }
+
+            factoryOf(::RegisterUserUseCase)
+            factoryOf(::LoginUserUseCase)
+            factoryOf(::GetUserInfoUseCase)
+            factoryOf(::StartTimerUseCase)
+            factoryOf(::StopTimerUseCase)
+            factoryOf(::AddManualRecordUseCase)
+            factoryOf(::AdminManageBaseCategoryUseCase)
+            factoryOf(::ManageUserCategoryUseCase)
+            factoryOf(::GetCategoriesUseCase)
+            factoryOf(::GetTimeRecordsUseCase)
+            factoryOf(::DeleteCategoryUseCase)
+            factoryOf(::AdminDeleteBaseCategoryUseCase)
+            factoryOf(::UpdateRecordDescriptionUseCase)
+            factoryOf(::RollbackRecordDescriptionUseCase)
+            factoryOf(::GetDescriptionHistoryUseCase)
+
+            single {
+                CliController(
+                    sessionFile = get(named("session_file")),
+                    userRepository = get(),
+                    registerUseCase = get(),
+                    loginUseCase = get(),
+                    startTimerUseCase = get(),
+                    stopTimerUseCase = get(),
+                    addManualRecordUseCase = get(),
+                    adminManageBaseCategoryUseCase = get(),
+                    manageUserCategoryUseCase = get(),
+                    getCategoriesUseCase = get(),
+                    getTimeRecordsUseCase = get(),
+                    deleteCategoryUseCase = get(),
+                    adminDeleteBaseCategoryUseCase = get(),
+                    updateRecordDescriptionUseCase = get(),
+                    rollbackRecordDescriptionUseCase = get(),
+                    getDescriptionHistoryUseCase = get()
+                )
+            }
         }
     }
 
@@ -164,17 +219,19 @@ fun main(args: Array<String>) {
     }
 
     try {
-        val db = koinApp.koin.get<AppDatabase>()
-        runBlocking {
-            db.userDao().findByLogin("dummy")
+        val db = koinApp.koin.getOrNull<AppDatabase>()
+        if (db != null) {
+            runBlocking {
+                db.userDao().findByLogin("dummy")
+            }
         }
     } catch (e: Exception) {
     }
 
     val controller = koinApp.koin.get<CliController>()
-    controller.handleArgs(args)
+    controller.handleArgs(cleanArgs)
 
-    koinApp.koin.get<AppDatabase>().close()
+    koinApp.koin.getOrNull<AppDatabase>()?.close()
 }
 
 fun createSQLiteDriver(): SQLiteDriver {

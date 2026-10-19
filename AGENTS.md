@@ -99,7 +99,8 @@ IU7_7sem_web/
 │
 ├── web/                       # [Web-трек] Веб-компоненты
 │   ├── api/                   # Спецификация OpenAPI 3.1 (WebLab#2)
-│   ├── backend/               # REST API сервис (WebLab#3)
+│   ├── data/                  # Слой хранения PostgreSQL и сущности БД (WebLab#3)
+│   ├── backend/               # REST API сервис на Ktor (WebLab#3)
 │   └── frontend/              # SPA приложение React+Vite (WebLab#8)
 └── deploy/                    # Конфигурации Docker Compose, Nginx, мониторинга
 ```
@@ -114,9 +115,13 @@ IU7_7sem_web/
   ./gradlew :tech_ui:jar
   # Результат: dist/tech_ui.jar
   ```
-- Запуск CLI:
+- Запуск CLI в локальном режиме:
   ```bash
   java -jar dist/tech_ui.jar [команда]
+  ```
+- Запуск CLI через REST API сервис (Бонус 2):
+  ```bash
+  java -jar dist/tech_ui.jar --api [команда]
   ```
 - Сборка Android Dex для CLI:
   ```bash
@@ -126,12 +131,16 @@ IU7_7sem_web/
 
 ### 6.2. Команды для Web-лабораторных
 
+| Лабораторная | Команда | Назначение |
+| :--- | :--- | :--- |
 | **WebLab#2** | `docker run --rm -v $(pwd):/spec -w /spec redocly/cli lint web/api/openapi.yaml` | Индустриальный линтинг схемы (Redocly CLI) |
 | **WebLab#2** | `openapi-spec-validator web/api/openapi.yaml` | Валидация спецификации (OpenAPI Spec Validator) |
 | **WebLab#2** | `python3 web/api/scripts/mock_server.py 4010` | Запуск Mock-сервера по контракту |
 | **WebLab#2** | `python3 web/api/scripts/test_scenario.py` | Сквозной тест пользовательских сценариев (15 шагов) |
-| **WebLab#3** | `./gradlew :web:backend:test` | Запуск тестов REST API сервиса |
-| **WebLab#3** | `./gradlew :web:backend:run` | Локальный запуск Web API сервиса |
+| **WebLab#3** | `./gradlew :web:backend:test` | Запуск модульных и контрактных тестов сервиса |
+| **WebLab#3** | `./gradlew :web:backend:jar && docker compose up --build -d` | Сборка fat-jar и запуск PostgreSQL + Backend в Docker Compose |
+| **WebLab#3** | `python3 web/api/scripts/verify_live_api.py http://localhost:8080` | Сквозная верификация живого API (14 шагов) |
+| **WebLab#3** | `java -jar dist/tech_ui.jar --api categories` | Проверка работы консольного клиента через REST API |
 | **WebLab#4** | `docker compose -f deploy/docker-compose.yml up --build -d` | Развертывание Nginx + Web App + DB |
 | **WebLab#4** | `./deploy/scripts/healthcheck.sh` | HTTP-проверки маршрутизации и статуса |
 | **WebLab#5** | `k6 run deploy/tests/load_test.js` | Нагрузочное тестирование балансировки |
@@ -149,5 +158,12 @@ IU7_7sem_web/
    - Разрешено: `web/api/openapi.yaml`, `web/api/README.md`, `web/api/scripts/*`, `AI_REVIEW.md`, `AGENTS.md`.
    - Контракт проектируется в файле `web/api/openapi.yaml` на основе согласованных сущностей и сценариев из `README.md`.
    - Запрещено: реализация факультативных допов (GraphQL и т.д.), коммиты с невалидными примерами схемы.
-3. При переходе к **WebLab#3**:
-   - Реализация REST API сервиса в модуле `:web:backend` на Kotlin/Ktor строго по контракту `web/api/openapi.yaml`.
+3. При выполнении **WebLab#3**:
+   - Реализован REST API сервис в модуле `:web:backend` на Kotlin/Ktor строго по контракту `web/api/openapi.yaml`.
+   - Слой данных вынесен в отдельный подпроект `:web:data` (PostgreSQL, HikariCP, репозитории).
+   - Реализован Бонус 1 (JWT аутентификация и авторизация по ролям USER/ADMIN).
+   - Реализован Бонус 2 (перенаправление существующих клиентских интерфейсов `:tech_ui` и `:app` на REST API через `RestApiClient`).
+   - Контейнеризованы сервис и СУБД в Docker Compose.
+4. При переходе к **WebLab#4**:
+   - Настройка Nginx reverse proxy, маршрутизация запросов к backend, отдача документации Swagger UI и статики.
+

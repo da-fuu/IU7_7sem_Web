@@ -1,14 +1,49 @@
-*.iml
-.gradle
+# Gradle & Build
+.gradle/
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+**/.kotlin/
+
+# IDE & Editor
 .idea/
-/local.properties
+*.iml
+*.ipr
+*.iws
+.vscode/
 .DS_Store
-/build
-/captures
-/.kotlin
-.externalNativeBuild
-.cxx
-/dist
-/db
-/logs
-__pycache__
+Thumbs.db
+*.swp
+*~
+
+# Android & Local Configuration
+local.properties
+**/local.properties
+.cxx/
+.externalNativeBuild/
+captures/
+
+# Distribution & Binaries
+dist/
+**/dist/
+
+# Logs & Database runtime
+logs/
+*.log
+db/
+
+# Environment & Secrets
+.env
+.env.local
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Node & Frontend
+node_modules/
+.npm/

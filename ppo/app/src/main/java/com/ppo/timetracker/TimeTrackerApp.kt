@@ -115,12 +115,20 @@ class TimeTrackerApp : Application() {
         val minDuration = minDurationStr.toLongOrNull() ?: 1L
         val businessConfig = BusinessConfig(minDurationMinutes = minDuration)
 
+        val apiUrl = properties.getProperty("api.url")
+        val isApiMode = properties.getProperty("storage.type", "objectbox") == "api" || apiUrl != null
+        val effectiveApiUrl = apiUrl ?: "http://10.0.2.2:8080/api/v1"
+
         startKoin {
             androidContext(this@TimeTrackerApp)
             modules(module {
                 single { businessConfig }
                 single(named("db_file")) { dbFile }
-                single(named("session_file")) { File(baseDir, "session.txt") }
+                val sessionFile = File(baseDir, "session.txt")
+                single(named("session_file")) { sessionFile }
+
+                val apiClient = com.ppo.data.api.RestApiClient(effectiveApiUrl, sessionFile)
+                single(named("api_client")) { apiClient }
 
                 single {
                     val file = get<File>(named("db_file"))
@@ -152,9 +160,13 @@ class TimeTrackerApp : Application() {
                 single<ICategoryRepository>(named("objectbox")) { CategoryRepositoryObjectBoxImpl(get()) }
                 single<ITimeRecordRepository>(named("objectbox")) { TimeRecordRepositoryObjectBoxImpl(get()) }
 
-                single<IUserRepository> { get(named("objectbox")) }
-                single<ICategoryRepository> { get(named("objectbox")) }
-                single<ITimeRecordRepository> { get(named("objectbox")) }
+                single<IUserRepository>(named("api")) { com.ppo.data.api.ApiUserRepository(get(named("api_client"))) }
+                single<ICategoryRepository>(named("api")) { com.ppo.data.api.ApiCategoryRepository(get(named("api_client"))) }
+                single<ITimeRecordRepository>(named("api")) { com.ppo.data.api.ApiTimeRecordRepository(get(named("api_client"))) }
+
+                single<IUserRepository> { if (isApiMode) get(named("api")) else get(named("objectbox")) }
+                single<ICategoryRepository> { if (isApiMode) get(named("api")) else get(named("objectbox")) }
+                single<ITimeRecordRepository> { if (isApiMode) get(named("api")) else get(named("objectbox")) }
 
                 single<IPasswordHasher> { PasswordHasherImpl() }
 
