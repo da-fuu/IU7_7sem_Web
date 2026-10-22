@@ -1,9 +1,5 @@
 # TimeTracker Web
 
-Проектная документация и системный анализ по курсу «Web-технологии» (WebLab#1, 2026).  
-*Контекст агента:* [AGENTS.md](AGENTS.md) | *Анализ ППО:* [docs/AI_ANALYSIS.md](docs/AI_ANALYSIS.md) | *Журнал ИИ:* [docs/AI_REVIEW.md](docs/AI_REVIEW.md)
-
----
 
 ## 1. Название проекта
 **TimeTracker** (Web-версия)
@@ -132,7 +128,7 @@
 #### Эскиз 1: Вход в систему (`/login`)
 ![auth_screen](docs/wireframes/auth_screen.svg)
 
-#### Эскиз 2: Главный экран — Таймер в 1 клик (`/timer`)
+#### Эскиз 2: Главный экран (`/timer`)
 ![timer_screen](docs/wireframes/timer_screen.svg)
 
 #### Эскиз 3: Добавление записи вручную и таймлайн (`/records`)
