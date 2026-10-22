@@ -7,6 +7,7 @@ import com.ppo.domain.repository.ITimeRecordRepository
 import com.ppo.domain.repository.IUserSettingsRepository
 import com.ppo.web.data.repository.PostgresTimeRecordRepository
 import com.ppo.web.dto.*
+import com.ppo.web.service.AutoStopWorker
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
 import io.ktor.server.request.receive
@@ -20,11 +21,13 @@ fun Route.recordRoutes(
     timeRecordRepository: ITimeRecordRepository,
     categoryRepository: ICategoryRepository,
     userSettingsRepository: IUserSettingsRepository,
-    recordHistoryRepository: IRecordHistoryRepository
+    recordHistoryRepository: IRecordHistoryRepository,
+    autoStopWorker: AutoStopWorker = AutoStopWorker(timeRecordRepository, userSettingsRepository, recordHistoryRepository)
 ) {
     route("/api/v1/records") {
         get {
             val authUser = call.getAuthUserOrRespond() ?: return@get
+            autoStopWorker.processExpiredRecordsForUser(authUser.userId)
             val categoryIdParam = call.request.queryParameters["categoryId"]?.let {
                 try { CategoryId(UUID.fromString(it)) } catch (e: Exception) { null }
             }
@@ -124,17 +127,7 @@ fun Route.recordRoutes(
                 }
             }
 
-            if (settings.autoStopEnabled) {
-                val activeSession = timeRecordRepository.getActiveSession(authUser.userId)
-                if (activeSession != null) {
-                    val maxSec = DurationConverter.toSeconds(settings.maxActiveDurationValue, settings.maxActiveDurationUnit)
-                    val activeDuration = Duration.between(activeSession.startTime, Instant.now()).seconds
-                    if (activeDuration >= maxSec) {
-                        val autoEnd = activeSession.startTime.plusSeconds(maxSec)
-                        timeRecordRepository.saveRecord(activeSession.copy(endTime = autoEnd))
-                    }
-                }
-            }
+            autoStopWorker.processExpiredRecordsForUser(authUser.userId)
 
             val record = TimeRecord(
                 id = RecordId(UUID.randomUUID()),

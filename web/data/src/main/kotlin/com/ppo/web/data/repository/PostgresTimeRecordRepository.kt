@@ -172,4 +172,17 @@ class PostgresTimeRecordRepository(private val dataSource: DataSource) : ITimeRe
     override suspend fun getAllTimeRecords(): List<TimeRecord> = transaction {
         TimeRecordEntity.all().map { it.toDomain() }
     }
+
+    override suspend fun getActiveRecords(userId: UserId?): List<TimeRecord> = transaction {
+        val query = if (userId != null) {
+            TimeRecordEntity.find {
+                (TimeRecordsTable.user eq userId.value.toString()) and TimeRecordsTable.endTime.isNull()
+            }
+        } else {
+            TimeRecordEntity.find {
+                TimeRecordsTable.endTime.isNull()
+            }
+        }
+        query.map { it.toDomain() }
+    }
 }

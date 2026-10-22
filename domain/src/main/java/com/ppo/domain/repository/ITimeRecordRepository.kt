@@ -22,4 +22,10 @@ interface ITimeRecordRepository {
     suspend fun addDescriptionVersion(version: DescriptionVersion): Result<Unit>
     suspend fun deleteRecord(recordId: RecordId): Result<Unit>
     suspend fun getAllTimeRecords(): List<TimeRecord>
+    suspend fun getActiveRecords(userId: UserId? = null): List<TimeRecord> =
+        if (userId != null) {
+            getTimeRecords(userId).filter { it.endTime == null }
+        } else {
+            getAllTimeRecords().filter { it.endTime == null }
+        }
 }

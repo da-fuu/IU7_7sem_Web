@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime
 import sys
 import uuid
 import requests
@@ -13,7 +14,7 @@ def run_live_verification():
 
     session = requests.Session()
     passed = 0
-    total = 14
+    total = 15
 
     suffix = uuid.uuid4().hex[:6]
     test_user_login = f"user_{suffix}"
@@ -166,8 +167,10 @@ def run_live_verification():
     passed += 1
 
     print("\n[Step 11] Stop Active Session by PATCH /api/v1/records/{id}")
+    start_dt = datetime.datetime.fromisoformat(active_rec["startTime"].replace("Z", "+00:00"))
+    stop_dt = start_dt + datetime.timedelta(hours=1)
     stop_res = session.patch(f"{BASE_URL}/api/v1/records/{record_id}", headers=user_headers, json={
-        "endTime": "2026-10-19T12:00:00Z"
+        "endTime": stop_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     })
     assert stop_res.status_code == 200
     assert stop_res.json()["endTime"] is not None
@@ -235,6 +238,34 @@ def run_live_verification():
     assert page_data["limit"] == 1
     assert page_data["total"] >= 2
     print(f"  -> SUCCESS: Pagination verified (items={len(page_data['items'])}, total={page_data['total']})")
+    passed += 1
+
+    print("\n[Step 15] Time Interval Update with Versioning & Category Scope Filtering")
+    scope_default = session.get(f"{BASE_URL}/api/v1/categories?scope=default", headers=user_headers)
+    assert scope_default.status_code == 200
+    assert all(cat["isDefault"] is True for cat in scope_default.json()["items"])
+
+    scope_custom = session.get(f"{BASE_URL}/api/v1/categories?scope=custom", headers=user_headers)
+    assert scope_custom.status_code == 200
+    assert all(cat["isDefault"] is False for cat in scope_custom.json()["items"])
+
+    new_start = "2026-10-19T09:30:00Z"
+    new_end = "2026-10-19T10:45:00Z"
+    update_interval_res = session.patch(f"{BASE_URL}/api/v1/records/{hist_rec_id}", headers=user_headers, json={
+        "startTime": new_start,
+        "endTime": new_end
+    })
+    assert update_interval_res.status_code == 200
+    updated_rec = update_interval_res.json()
+    assert updated_rec["startTime"] == new_start
+    assert updated_rec["endTime"] == new_end
+
+    hist_after_update = session.get(f"{BASE_URL}/api/v1/records/{hist_rec_id}/history", headers=user_headers)
+    assert hist_after_update.status_code == 200
+    latest_snapshot = hist_after_update.json()["items"][0]
+    assert latest_snapshot["startTime"] == "2026-10-19T10:00:00Z"
+    assert latest_snapshot["endTime"] == "2026-10-19T11:00:00Z"
+    print("  -> SUCCESS: Category scopes and record interval versioning verified")
     passed += 1
 
     print("\n" + "=" * 70)

@@ -8,6 +8,7 @@ import com.ppo.domain.repository.*
 import com.ppo.web.data.db.DatabaseFactory
 import com.ppo.web.data.repository.*
 import com.ppo.web.routes.*
+import com.ppo.web.service.AutoStopWorker
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.serialization.jackson.jackson
@@ -72,6 +73,10 @@ fun Application.module(
     val timeRecordRepository: ITimeRecordRepository = PostgresTimeRecordRepository(ds)
     val recordHistoryRepository: IRecordHistoryRepository = PostgresRecordHistoryRepository(ds)
 
+    val autoStopWorker = AutoStopWorker(timeRecordRepository, userSettingsRepository, recordHistoryRepository)
+    val autoStopIntervalMs = System.getenv("AUTO_STOP_INTERVAL_MS")?.toLongOrNull() ?: (10 * 60 * 1000L)
+    autoStopWorker.start(this, autoStopIntervalMs)
+
     val spec = specFile ?: File("web/api/openapi.yaml")
 
     routing {
@@ -79,7 +84,7 @@ fun Application.module(
         authRoutes(userRepository, userSettingsRepository)
         userRoutes(userRepository, userSettingsRepository)
         categoryRoutes(categoryRepository)
-        recordRoutes(timeRecordRepository, categoryRepository, userSettingsRepository, recordHistoryRepository)
+        recordRoutes(timeRecordRepository, categoryRepository, userSettingsRepository, recordHistoryRepository, autoStopWorker)
         historyRoutes(timeRecordRepository, recordHistoryRepository)
     }
 }

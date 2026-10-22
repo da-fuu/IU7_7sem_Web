@@ -147,4 +147,41 @@ class CategoryApiTest {
         }
         assertEquals(HttpStatusCode.NotFound, getRes.status)
     }
+
+    @Test
+    fun testListCategoriesWithScopeFilter() = testApplication {
+        val categoryRepo = MockCategoryRepository()
+        val userId = UserId(UUID.randomUUID())
+        val defaultId = CategoryId(UUID.randomUUID())
+        val customId = CategoryId(UUID.randomUUID())
+        runBlocking {
+            categoryRepo.saveCategory(Category(defaultId, null, "DefaultCat", "#3B82F6", true))
+            categoryRepo.saveCategory(Category(customId, userId, "CustomCat", "#8B5CF6", false))
+        }
+        val token = SecurityUtils.createToken(userId.value.toString(), "alex", "USER")
+
+        val client = setupTestApp {
+            categoryRoutes(categoryRepo)
+        }
+
+        val allRes = client.get("/api/v1/categories?scope=all") {
+            header("Authorization", "Bearer $token")
+        }
+        val allList: CategoryListResponseDto = allRes.body()
+        assertEquals(2, allList.items.size)
+
+        val defaultRes = client.get("/api/v1/categories?scope=default") {
+            header("Authorization", "Bearer $token")
+        }
+        val defaultList: CategoryListResponseDto = defaultRes.body()
+        assertEquals(1, defaultList.items.size)
+        assertTrue(defaultList.items[0].isDefault)
+
+        val customRes = client.get("/api/v1/categories?scope=custom") {
+            header("Authorization", "Bearer $token")
+        }
+        val customList: CategoryListResponseDto = customRes.body()
+        assertEquals(1, customList.items.size)
+        assertFalse(customList.items[0].isDefault)
+    }
 }

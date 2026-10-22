@@ -92,6 +92,13 @@ class MockTimeRecordRepository : ITimeRecordRepository {
         else Result.failure(NoSuchElementException())
     }
     override suspend fun getAllTimeRecords(): List<TimeRecord> = records.values.toList()
+    override suspend fun getActiveRecords(userId: UserId?): List<TimeRecord> {
+        return if (userId != null) {
+            records.values.filter { it.userId == userId && it.endTime == null }
+        } else {
+            records.values.filter { it.endTime == null }
+        }
+    }
 }
 
 class MockRecordHistoryRepository : IRecordHistoryRepository {

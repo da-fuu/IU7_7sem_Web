@@ -16,9 +16,14 @@ fun Route.categoryRoutes(categoryRepository: ICategoryRepository) {
     route("/api/v1/categories") {
         get {
             val authUser = call.getAuthUserOrRespond() ?: return@get
+            val scope = call.request.queryParameters["scope"]?.lowercase() ?: "all"
             val all = categoryRepository.getAllCategories()
-            val userCategories = all.filter { it.isDefault || it.userId == authUser.userId }
-            call.respond(HttpStatusCode.OK, CategoryListResponseDto(items = userCategories.map { it.toDto() }))
+            val filtered = when (scope) {
+                "default" -> all.filter { it.isDefault }
+                "custom" -> all.filter { !it.isDefault && it.userId == authUser.userId }
+                else -> all.filter { it.isDefault || it.userId == authUser.userId }
+            }
+            call.respond(HttpStatusCode.OK, CategoryListResponseDto(items = filtered.map { it.toDto() }))
         }
 
         post {
