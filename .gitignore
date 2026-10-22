@@ -31,7 +31,6 @@ dist/
 # Logs & Database runtime
 logs/
 *.log
-db/
 
 # Environment & Secrets
 .env
