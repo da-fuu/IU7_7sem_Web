@@ -1,62 +1,78 @@
-@startuml
-skinparam linetype ortho
-skinparam packageStyle rectangle
+@startchen
 
-entity "Пользователь" as user {
-  * id : UUID <<PK>>
-  --
-  * login : String
-  * name : String
-  * password_hash : String
-  * role : Role (USER/ADMIN)
+entity Пользователь {
+  Идентификатор
+  Логин
+  Имя
+  Хэш_пароля
+  Роль
 }
 
-entity "Настройки_пользователя" as settings {
-  * id : UUID <<PK>>
-  --
-  * user_id : UUID <<FK>>
-  * duration_unit : DurationUnit
-  * auto_stop_enabled : Boolean
-  * max_active_duration : Long
-  * min_duration_enabled : Boolean
-  * min_duration : Long
+entity Настройки_пользователя {
+  Идентификатор
+  Единица_измерения
+  Авто_остановка_включена
+  Макс_длительность
+  Мин_длительность_включена
+  Мин_длительность
 }
 
-entity "Категория" as category {
-  * id : UUID <<PK>>
-  --
-  user_id : UUID <<FK>>
-  * name : String
-  * color_hex : String
-  * is_default : Boolean
+entity Категория {
+  Идентификатор
+  Имя
+  Цвет
+  Тип_категории
 }
 
-entity "Запись_времени" as record {
-  * id : UUID <<PK>>
-  --
-  * user_id : UUID <<FK>>
-  * category_id : UUID <<FK>>
-  * start_time : Timestamp
-  end_time : Timestamp?
-  * description : String
+entity Запись_времени {
+  Идентификатор
+  Время_начала
+  Время_окончания
+  Описание
 }
 
-entity "Снимок_истории_записи" as history {
-  * id : UUID <<PK>>
-  --
-  * record_id : UUID <<FK>>
-  * category_id : UUID <<FK>>
-  * start_time : Timestamp
-  end_time : Timestamp?
-  * description : String
-  * modified_at : Timestamp
+entity Снимок_истории_записи {
+  Идентификатор
+  Время_начала
+  Время_окончания
+  Описание
+  Время_изменения
 }
 
-user ||--|| settings : "Настраивает"
-user ||--o{ category : "Создает"
-user ||--o{ record : "Логирует"
-category ||--o{ record : "Включает"
-record ||--o{ history : "Хранит снимки"
-category ||--o{ history : "Фиксирует категорию"
+relationship Настраивает {
+}
 
-@enduml
+relationship Создает {
+}
+
+relationship Логирует {
+}
+
+relationship Включает {
+}
+
+relationship Хранит {
+}
+
+relationship Фиксирует_категорию {
+}
+
+Пользователь -1- Настраивает
+Настраивает -1- Настройки_пользователя
+
+Пользователь -1- Создает
+Создает -N- Категория
+
+Пользователь -1- Логирует
+Логирует -N- Запись_времени
+
+Категория -1- Включает
+Включает -N- Запись_времени
+
+Запись_времени -1- Хранит
+Хранит -N- Снимок_истории_записи
+
+Категория -1- Фиксирует_категорию
+Фиксирует_категорию -N- Снимок_истории_записи
+
+@endchen
