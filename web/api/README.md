@@ -258,3 +258,21 @@ Target Server: http://127.0.0.1:4015
 ALL SCENARIO TESTS PASSED SUCCESSFULLY! (15/15 steps)
 ======================================================================
 ```
+
+### 5.3. Интерактивное тестирование через Swagger Editor
+
+Контракт `openapi.yaml` и мок-сервер полностью поддерживают интерактивную отладку через публичный веб-редактор [editor.swagger.io](https://editor.swagger.io/):
+
+1. **Запуск мок-сервера**:
+   ```bash
+   python3 web/api/scripts/mock_server.py 4010
+   ```
+2. **Импорт контракта**: вставьте содержимое [`openapi.yaml`](openapi.yaml) в левую панель Swagger Editor.
+3. **Выбор сервера**: в селекторе `Servers` выберите `http://localhost:4010 — Локальный Mock-сервер`.
+4. **Быстрый старт (Auto-provisioning)**:
+   - В эндпоинте `POST /api/v1/auth/login` предзаполненные демонстрационные данные (`alex_dev` / `securePassword123` или `admin` / `adminPassword123`) автоматически создают пользователя и отдают `200 OK` с JWT-токеном в один клик без необходимости предварительного вызова регистрации.
+   - Скопируйте токен в модальное окно **Authorize** (`bearerAuth`) для выполнения авторизованных запросов (`/users/{userId}/settings`, `/records`, `/categories`).
+5. **CORS и безопасность браузера**:
+   - Сервер отдает корректные заголовки `Access-Control-Allow-Origin: *`, `Access-Control-Allow-Methods`, `Access-Control-Allow-Headers` и отвечает на preflight-запросы `OPTIONS` (204 No Content).
+   - Включен заголовок `Access-Control-Allow-Private-Network: true` для соответствия спецификации W3C Private Network Access в Chromium.
+   - Сервер использует `Connection: close` и `os._exit(0)`, предотвращая зависание соединений и процесса при остановке по `Ctrl+C`.

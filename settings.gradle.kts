@@ -23,7 +23,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "TimeTracker"
-include(":app", ":data", ":data_objectbox", ":migration", ":tech_ui")
+include(":domain", ":app", ":data", ":data_objectbox", ":migration", ":tech_ui")
 project(":app").projectDir = file("ppo/app")
 project(":data").projectDir = file("ppo/data")
 project(":data_objectbox").projectDir = file("ppo/data_objectbox")

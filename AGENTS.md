@@ -11,7 +11,7 @@
 - **Роль агента**: Генерация и доработка проектных артефактов (требования, схемы, контракты, код, конфигурации, тесты) в строгом соответствии с критериями приемки студента.
 - **Рабочий цикл**:
   $$\text{Входные данные и критерии} \longrightarrow \text{План} \longrightarrow \text{Генерация/Правка} \longrightarrow \text{Запуск проверок} \longrightarrow \text{Ревью} \longrightarrow \text{Исправление}$$
-- **Фиксация решений**: По каждой лабораторной работе ведется журнал в [AI_REVIEW.md](AI_REVIEW.md).
+- **Фиксация решений**: По каждой лабораторной работе ведется журнал в [docs/AI_REVIEW.md](docs/AI_REVIEW.md).
 
 ---
 
@@ -19,12 +19,12 @@
 
 | Термин | Описание |
 | :--- | :--- |
-| **User (Пользователь)** | Актор системы. Обладает учетными данными, личными категориями и хронологическими записями. Роли: `USER`, `ADMIN`. |
+| **User (Пользователь)** | Актор системы. Профиль содержит только идентификационные данные (`id`, `login`, `name`, `role: USER / ADMIN`). |
+| **UserSettings (Настройки пользователя)** | Изолированный ресурс предпочтений (`/api/v1/users/{userId}/settings`): единицы измерения (`seconds`, `minutes`, `hours`, `days`), лимит авто-остановки (`maxActiveDuration`, `autoStopEnabled`) и минимальный порог активности (`minDuration`, `minDurationEnabled`). |
 | **Category (Категория)** | Классификатор деятельности (название, цвет в формате HEX). Бывает системной (базовой, `isDefault = true`, видна всем) и пользовательской (`userId != null`). |
-| **TimeRecord (Запись времени)** | Зафиксированный интервал активности с указанием времени начала, окончания, категории и текстового описания. |
-| **DescriptionVersion (Версия описания)** | Неизменяемый снимок предыдущего состояния описания записи времени для аудита и отката. |
-| **Active Session (Активная сессия)** | Непрерывная сессия таймера (где `endTime == null`). У пользователя может быть максимум одна активная сессия в текущий момент времени. |
-| **Business Rule: Min Duration** | Запись длительностью менее установленного лимита (по умолчанию 1 минута) считается случайным кликом и отклоняется бизнес-логикой. |
+| **TimeRecord (Запись времени)** | Интервал активности. Модель открытых интервалов: `endTime == null` обозначает текущую активную задачу. Поддерживается параллельный трекинг задач и пересечение интервалов. |
+| **RecordHistoryEntry (Снимок истории записи)** | Неизменяемый снимок всех ключевых параметров записи (`startTime`, `endTime`, `categoryId`, `description`, `modifiedAt`) для аудита и forward-only отката. |
+| **Collection Envelope (Обертка коллекций)** | Объектная упаковка всех списочных ответов: массивы возвращаются внутри словаря в поле `items: [...]` во избежание уязвимостей и для расширяемости. |
 | **Clean Architecture** | Разделение системы на слои: Domain (чистая логика), Data (хранилище), Presentation / Web API (интерфейсы). |
 
 ---
@@ -55,12 +55,12 @@
 
 - **Требования к WebLab#1**: [README.md (WebLab#1)](README.md)
 - **Спецификация REST API и контракт (WebLab#2)**: [web/api/README.md](web/api/README.md) и [web/api/openapi.yaml](web/api/openapi.yaml)
-- **Анализ исходного проекта ППО**: [AI_ANALYSIS.md](AI_ANALYSIS.md)
+- **Анализ исходного проекта ППО**: [docs/AI_ANALYSIS.md](docs/AI_ANALYSIS.md)
 - **Архитектурные решения (ADR)**:
   - [ADR-001: Выбор стека веб-бэкенда и интеграция с ядром domain](docs/adr/ADR-001-backend-stack.md)
   - [ADR-002: Выбор архитектуры хранения данных и СУБД](docs/adr/ADR-002-database.md)
   - [ADR-003: Выбор клиентского стека для Web SPA](docs/adr/ADR-003-frontend-stack.md)
-- **Журнал ревью и решений ИИ**: [AI_REVIEW.md](AI_REVIEW.md)
+- **Журнал ревью и решений ИИ**: [docs/AI_REVIEW.md](docs/AI_REVIEW.md)
 - **Графические и архитектурные схемы**: каталог [docs/](docs/)
 
 ---
@@ -70,38 +70,37 @@
 ```
 IU7_7sem_web/
 ├── AGENTS.md                  # Данное руководство для агентов
-├── AI_REVIEW.md               # Журнал работы в ИИ-треке
 ├── README.md                  # Проектные материалы WebLab#1
-├── config.properties          # Конфигурация локального окружения
-├── docs/                      # Исходники диаграмм (PlantUML, BPMN, DBML, SVG)
-│   ├── L1.puml / L1.svg       # C4 Context
-│   ├── L2.puml / L2.svg       # C4 Container
-│   ├── L3.puml / L3.svg       # C4 Component
-│   ├── usecase.puml           # Use-Case диаграмма
-│   ├── er.puml / er.svg       # ER-диаграмма сущностей
-│   ├── db.dbml / db.svg       # Реляционная схема БД
-│   ├── withtimer.bpmn         # BPMN: Запуск и остановка таймера
-│   ├── addtask.bpmn           # BPMN: Добавление записи вручную
-│   ├── addcategory.bpmn       # BPMN: Создание базовой категории
-│   └── wireframes/            # Эскизы экранов веб-приложения
+├── gradle/ + gradlew          # Корневая система сборки Gradle
+├── build.gradle.kts           # Корневой скрипт сборки
+├── settings.gradle.kts        # Конфигурация модулей Gradle
+├── docs/                      # Исходники диаграмм, ADR и проектные отчеты
+│   ├── AI_ANALYSIS.md         # Системный анализ кодовой базы ППО
+│   ├── AI_REVIEW.md           # Журнал решений и ревью в ИИ-треке
+│   ├── adr/                   # Архитектурные решения (ADR-001..003)
+│   ├── wireframes/            # Эскизы экранов веб-приложения
+│   └── ...                    # C4, BPMN, ER, DBML схемы
 │
-├── domain/                    # [PPO] Чистое ядро бизнес-логики (Kotlin JVM)
+├── domain/                    # [Ядро] Чистая бизнес-логика (Kotlin JVM, Clean Architecture)
 │   └── src/main/java/com/ppo/domain/
-│       ├── model/             # Бизнес-сущности (User, Category, TimeRecord)
+│       ├── model/             # Сущности (User, Category, TimeRecord)
 │       ├── repository/        # Интерфейсы репозиториев
 │       └── usecase/           # Сценарии бизнес-логики
 │
-├── data/                      # [PPO] Слой данных Room / SQLite
-├── data_objectbox/            # [PPO] Слой данных ObjectBox NoSQL
-├── migration/                 # [PPO] Use case миграции данных
-├── tech_ui/                   # [PPO] CLI интерфейс (Kotlin JVM / Android dex)
-├── app/                       # [PPO] Мобильное приложение (Android Jetpack Compose)
-│
 ├── web/                       # [Web-трек] Веб-компоненты
-│   ├── api/                   # Спецификация OpenAPI 3.1 (WebLab#2)
-│   ├── backend/               # REST API сервис (WebLab#3)
+│   ├── api/                   # Спецификация OpenAPI 3.1, мок-сервер, тесты (WebLab#2)
+│   ├── backend/               # REST API сервис на Ktor (WebLab#3)
 │   └── frontend/              # SPA приложение React+Vite (WebLab#8)
-└── deploy/                    # Конфигурации Docker Compose, Nginx, мониторинга
+│
+├── deploy/                    # Конфигурации Docker Compose, Nginx, мониторинга (WebLab#4)
+│
+└── ppo/                       # [Архив ППО] Легаси клиенты и хранилища курса ППО
+    ├── app/                   # Мобильное приложение (Android Jetpack Compose)
+    ├── tech_ui/               # CLI интерфейс (Kotlin JVM / Android dex)
+    ├── data/                  # Слой данных Room / SQLite
+    ├── data_objectbox/        # Слой данных ObjectBox NoSQL
+    ├── migration/             # Use case миграции данных
+    └── config.properties      # Конфигурация локального окружения CLI
 ```
 
 ---
