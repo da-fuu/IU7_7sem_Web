@@ -46,8 +46,8 @@
     <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Request_Screen" targetRef="Activity_Select_Spot" />
     <bpmn:sequenceFlow id="Flow_3" sourceRef="Activity_Select_Spot" targetRef="Activity_Stop_Timer" />
     <bpmn:sequenceFlow id="Flow_4" sourceRef="Activity_Stop_Timer" targetRef="Gateway_Check_Result" />
-    <bpmn:sequenceFlow id="Flow_Success" name="Да (&#62; 1 мин)" sourceRef="Gateway_Check_Result" targetRef="Activity_Success_Screen" />
-    <bpmn:sequenceFlow id="Flow_Error_Loop" name="Нет (длительность &#60; 1 мин)" sourceRef="Gateway_Check_Result" targetRef="Activity_Request_Screen" />
+    <bpmn:sequenceFlow id="Flow_Success" name="Да (порог соблюден)" sourceRef="Gateway_Check_Result" targetRef="Activity_Success_Screen" />
+    <bpmn:sequenceFlow id="Flow_Error_Loop" name="Нет (длительность &#60; мин. порога)" sourceRef="Gateway_Check_Result" targetRef="Activity_Request_Screen" />
     <bpmn:sequenceFlow id="Flow_End" sourceRef="Activity_Success_Screen" targetRef="EndEvent_User" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

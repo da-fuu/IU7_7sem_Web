@@ -6,53 +6,69 @@ skinparam ParticipantPadding 20
 actor "Пользователь" as user
 boundary "TimerScreen\n(UI Compose)" as ui
 control "TimerViewModel\n(Presentation)" as vm
-control "StopTimerUseCase\n(Domain)" as uc
+control "TimeRecordUseCases\n(Domain)" as uc
+database "UserSettingsRepository\n(Data)" as settingsRepo
 database "TimeRecordRepository\n(Data)" as repo
 
 user -> ui : Открывает вкладку Таймер
 activate ui
 
-ui -> vm : Проверка незавершенных сессий
+ui -> vm : Запрос текущих активных задач
 activate vm
-vm -> repo : getActiveSession()
+vm -> repo : getActiveRecords(userId)
 activate repo
-repo --> vm : null (Нет активных)
+repo --> vm : List<TimeRecord> (активные сессии с endTime=null)
 deactivate repo
-vm --> ui : UI State (Ожидание)
+vm --> ui : UI State (Активные таймеры)
 deactivate vm
 
 user -> ui : Выбирает категорию, жмет "Старт"
-ui -> vm : startTimer(categoryId)
+ui -> vm : startActiveRecord(categoryId, description)
 activate vm
-vm --> ui : UI State (Таймер тикает)
+
+vm -> uc : CreateTimeRecordUseCase(start=now, end=null)
+activate uc
+uc -> repo : saveRecord(openTimeRecord)
+activate repo
+repo --> uc : Success (RecordId)
+deactivate repo
+uc --> vm : Success
+deactivate uc
+
+vm --> ui : UI State (Таймер запущен в фоне, параллельные задачи разрешены)
 deactivate vm
 
-...Проходит некоторое время...
+...Проходит некоторое время активности...
 
 user -> ui : Жмет "Стоп"
-ui -> vm : stopTimer()
+ui -> vm : stopActiveRecord(recordId, end=now)
 activate vm
 
-vm -> uc : execute(startTime, endTime, categoryId)
+vm -> uc : UpdateTimeRecordUseCase(recordId, end=now)
 activate uc
 
-uc -> uc : Расчет длительности (endTime - startTime)
+uc -> settingsRepo : getSettingsByUserId(userId)
+activate settingsRepo
+settingsRepo --> uc : UserSettings
+deactivate settingsRepo
 
-alt #mistyrose Если длительность < 1 мин (Ошибка)
-    uc --> vm : Error("Сессия слишком короткая")
-    vm --> ui : Показать ошибку (Сброс таймера)
-    ui --> user : Видит предупреждение
-else #honeydew Если сессия валидна (> 1 мин) (Успех)
-    uc -> repo : saveRecord(TimeRecord)
+uc -> uc : Проверка длительности (now - start) по minDuration
+
+alt #mistyrose Если minDurationEnabled и длительность < minDuration
+    uc --> vm : Error("422 DURATION_TOO_SHORT")
+    vm --> ui : Предупреждение о слишком короткой длительности
+    ui --> user : Видит ошибку, сессия продолжается
+else #honeydew Длительность валидна (или проверка отключена)
+    uc -> repo : saveRecord(updatedTimeRecord)
     activate repo
     repo --> uc : Success
     deactivate repo
     uc --> vm : Success
-    vm --> ui : Обновить статистику
-    ui --> user : Успешное завершение, видит графики
+    deactivate uc
+    vm --> ui : Обновить список и статистику
+    deactivate vm
+    ui --> user : Задача успешно завершена и зафиксирована
 end
 
-deactivate uc
-deactivate vm
 deactivate ui
 @enduml

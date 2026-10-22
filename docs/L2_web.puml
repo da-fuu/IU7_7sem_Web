@@ -5,10 +5,10 @@ Person(user, "Пользователь", "Аутентифицированный
 Person(admin, "Администратор", "Системный администратор")
 
 System_Boundary(time_tracker_system, "TimeTracker Web System") {
-    Container(spa, "Web SPA Client", "TypeScript, React, Vite", "Одностраничное приложение. Предоставляет интерфейс таймера, добавления записей, аналитики и управления категориями.")
+    Container(spa, "Web SPA Client", "TypeScript, React, Vite", "Одностраничное приложение. Предоставляет интерфейс таймера, добавления записей, аналитики, настроек и управления категориями.")
     Container(reverse_proxy, "Reverse Proxy / Web Server", "Nginx", "Маршрутизирует запросы к API (/api/v1), раздает статические ресурсы (HTML, CSS, JS).")
-    Container(web_backend, "Web Backend API", "Kotlin, Ktor REST API", "Обрабатывает HTTP запросы, выполняет сценарии бизнес-логики, обеспечивает валидацию и отдает Swagger UI.")
-    ContainerDb(db, "База данных", "PostgreSQL", "Хранит пользователей, категории, записи времени и историю версий описаний.")
+    Container(web_backend, "Web Backend API", "Kotlin, Ktor REST API", "Обрабатывает HTTP запросы, фоновый процесс авто-остановки, сценарии бизнес-логики, валидацию и Swagger UI.")
+    ContainerDb(db, "База данных", "PostgreSQL", "Хранит пользователей, настройки, категории, записи времени и снимки истории параметров.")
     Container(tech_ui, "Технологический UI (CLI)", "Kotlin JVM", "Консольный клиент для разработчиков и технического персонала.")
     Container(legacy_app, "Мобильный клиент (Android)", "Kotlin, Jetpack Compose", "Легаси-приложение из курса ППО.")
 }
@@ -20,7 +20,7 @@ Rel(spa, reverse_proxy, "Отправляет API запросы", "HTTPS / JSON
 Rel(reverse_proxy, spa, "Раздает статические ресурсы (HTML, JS, CSS)", "HTTPS")
 Rel(reverse_proxy, web_backend, "Проксирует API запросы (/api/v1/...)", "HTTP")
 
-Rel(web_backend, db, "Чтение и запись данных", "JDBC / SQL")
+Rel(web_backend, db, "Чтение и запись данных", "JDBC / Exposed ORM")
 
 Rel(tech_ui, web_backend, "Выполняет операции через API", "HTTP / REST")
 Rel(legacy_app, web_backend, "Синхронизирует данные через API", "HTTPS / REST")

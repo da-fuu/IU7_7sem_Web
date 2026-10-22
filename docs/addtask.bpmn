@@ -10,7 +10,7 @@
   </bpmn:collaboration>
   <bpmn:process id="Process_Backend_Logic" isExecutable="false">
     <bpmn:task id="Activity_Get_Map_Data" name="Сформировать список категорий из БД" />
-    <bpmn:task id="Activity_Process_Booking" name="Проверка пересечений времени и сохранение" />
+    <bpmn:task id="Activity_Process_Booking" name="Валидация интервала (T_start &#60; T_end) и сохранение" />
   </bpmn:process>
   <bpmn:process id="Process_User_Logic" isExecutable="false">
     <bpmn:startEvent id="StartEvent_User" name="Добавить запись вручную">
@@ -30,7 +30,7 @@
       <bpmn:outgoing>Flow_4</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:exclusiveGateway id="Gateway_Check_Result" name="Пересечений нет?">
+    <bpmn:exclusiveGateway id="Gateway_Check_Result" name="Интервал валиден?">
       <bpmn:incoming>Flow_4</bpmn:incoming>
       <bpmn:outgoing>Flow_Success</bpmn:outgoing>
       <bpmn:outgoing>Flow_Error_Loop</bpmn:outgoing>
@@ -46,8 +46,8 @@
     <bpmn:sequenceFlow id="Flow_2" sourceRef="Activity_Request_Map" targetRef="Activity_Select_Spot" />
     <bpmn:sequenceFlow id="Flow_3" sourceRef="Activity_Select_Spot" targetRef="Activity_Submit_Booking" />
     <bpmn:sequenceFlow id="Flow_4" sourceRef="Activity_Submit_Booking" targetRef="Gateway_Check_Result" />
-    <bpmn:sequenceFlow id="Flow_Success" name="Да" sourceRef="Gateway_Check_Result" targetRef="Activity_Success_Screen" />
-    <bpmn:sequenceFlow id="Flow_Error_Loop" name="Нет (ошибка)" sourceRef="Gateway_Check_Result" targetRef="Activity_Request_Map" />
+    <bpmn:sequenceFlow id="Flow_Success" name="Да (T_start &#60; T_end)" sourceRef="Gateway_Check_Result" targetRef="Activity_Success_Screen" />
+    <bpmn:sequenceFlow id="Flow_Error_Loop" name="Нет (ошибка 422)" sourceRef="Gateway_Check_Result" targetRef="Activity_Request_Map" />
     <bpmn:sequenceFlow id="Flow_End" sourceRef="Activity_Success_Screen" targetRef="EndEvent_User" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

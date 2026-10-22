@@ -1,17 +1,29 @@
 Project TimeTracker {
-  database_type: 'SQLite'
+  database_type: 'PostgreSQL'
 }
 
 Table users {
-  uid varchar(36) [primary key]
+  id varchar(36) [primary key]
   login varchar(100) [unique, not null]
   name varchar(100) [not null]
   password_hash varchar(255) [not null]
   role varchar(20) [not null]
 }
 
+Table user_settings {
+  id varchar(36) [primary key]
+  user_id varchar(36) [unique, not null]
+  duration_unit varchar(20) [not null, default: 'minutes']
+  auto_stop_enabled boolean [not null, default: false]
+  max_active_duration_value bigint [not null, default: 4]
+  max_active_duration_unit varchar(20) [not null, default: 'hours']
+  min_duration_enabled boolean [not null, default: true]
+  min_duration_value bigint [not null, default: 1]
+  min_duration_unit varchar(20) [not null, default: 'minutes']
+}
+
 Table categories {
-  uid varchar(36) [primary key]
+  id varchar(36) [primary key]
   user_id varchar(36)
   name varchar(100) [not null]
   color_hex varchar(7) [not null]
@@ -19,22 +31,27 @@ Table categories {
 }
 
 Table time_records {
-  uid varchar(36) [primary key]
+  id varchar(36) [primary key]
   user_id varchar(36) [not null]
   category_id varchar(36) [not null]
-  start_time integer [not null]
-  end_time integer
+  start_time timestamp [not null]
+  end_time timestamp
   description text [not null]
 }
 
 Table time_record_history {
-  uid varchar(36) [primary key]
+  id varchar(36) [primary key]
   record_id varchar(36) [not null]
+  category_id varchar(36) [not null]
+  start_time timestamp [not null]
+  end_time timestamp
   description text [not null]
-  modified_at integer [not null]
+  modified_at timestamp [not null]
 }
 
-Ref: categories.user_id > users.uid [delete: cascade, update: cascade]
-Ref: time_records.user_id > users.uid [delete: cascade, update: cascade]
-Ref: time_records.category_id > categories.uid [delete: cascade, update: cascade]
-Ref: time_record_history.record_id > time_records.uid [delete: cascade, update: cascade]
+Ref: user_settings.user_id > users.id [delete: cascade, update: cascade]
+Ref: categories.user_id > users.id [delete: cascade, update: cascade]
+Ref: time_records.user_id > users.id [delete: cascade, update: cascade]
+Ref: time_records.category_id > categories.id [delete: cascade, update: cascade]
+Ref: time_record_history.record_id > time_records.id [delete: cascade, update: cascade]
+Ref: time_record_history.category_id > categories.id [delete: cascade, update: cascade]

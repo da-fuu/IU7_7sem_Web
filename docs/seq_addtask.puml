@@ -6,7 +6,8 @@ skinparam ParticipantPadding 20
 actor "Пользователь" as user
 boundary "AddRecordScreen\n(UI Compose)" as ui
 control "AddRecordViewModel\n(Presentation)" as vm
-control "AddManualRecordUseCase\n(Domain)" as uc
+control "CreateTimeRecordUseCase\n(Domain)" as uc
+database "UserSettingsRepository\n(Data)" as settingsRepo
 database "TimeRecordRepository\n(Data)" as repo
 
 user -> ui : Нажимает "Добавить запись вручную"
@@ -14,40 +15,47 @@ activate ui
 
 ui -> vm : Запрос списка категорий
 activate vm
-vm -> repo : getAllCategories()
+vm -> repo : getCategories()
 activate repo
 repo --> vm : List<Category>
 deactivate repo
 vm --> ui : UI State (Форма загружена)
 deactivate vm
 
-user -> ui : Вводит время начала, конца, категорию
+user -> ui : Вводит время начала, окончания, категорию, описание
 user -> ui : Жмет "Сохранить" (Отправить данные)
 
-ui -> vm : submitRecord(start, end, category)
+ui -> vm : submitRecord(start, end, categoryId, description)
 activate vm
 
-vm -> uc : execute(TimeRecord)
+vm -> uc : execute(userId, categoryId, start, end, description)
 activate uc
 
-uc -> repo : findOverlapping(start, end)
-activate repo
-note right of repo: SQL запрос в БД для поиска\nпересечений по времени
-repo --> uc : List<TimeRecord> (Найденные пересечения)
-deactivate repo
-
-alt #mistyrose Если пересечения найдены (Нет)
-    uc --> vm : Error("Время пересекается с другой записью")
-    vm --> ui : Показать ошибку пересечения
+uc -> uc : Валидация диапазона (start < end)
+alt #mistyrose Если end <= start (Некорректный интервал)
+    uc --> vm : Error("422 INVALID_TIME_RANGE")
+    vm --> ui : Показать ошибку диапазона времени
     ui --> user : Видит ошибку, корректирует время
-else #honeydew Если пересечений нет (Да)
-    uc -> repo : saveRecord(TimeRecord)
-    activate repo
-    repo --> uc : Success
-    deactivate repo
-    uc --> vm : Success
-    vm --> ui : Закрыть форму, обновить список
-    ui --> user : Видит новую запись в списке
+else #honeydew Интервал времени корректен
+    uc -> settingsRepo : getSettingsByUserId(userId)
+    activate settingsRepo
+    settingsRepo --> uc : UserSettings
+    deactivate settingsRepo
+
+    uc -> uc : Проверка минимальной длительности (minDuration)
+    alt #mistyrose Если minDurationEnabled и длительность < minDuration
+        uc --> vm : Error("422 DURATION_TOO_SHORT")
+        vm --> ui : Показать ошибку минимальной длительности
+        ui --> user : Видит ошибку, увеличивает интервал
+    else #honeydew Валидация успешно пройдена (пересечения разрешены)
+        uc -> repo : saveRecord(TimeRecord)
+        activate repo
+        repo --> uc : Success
+        deactivate repo
+        uc --> vm : Success
+        vm --> ui : Закрыть форму, обновить список
+        ui --> user : Видит новую запись в таймлайне
+    end
 end
 
 deactivate uc

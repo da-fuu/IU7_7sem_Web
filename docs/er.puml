@@ -1,55 +1,62 @@
-@startchen
+@startuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
 
-entity Пользователь {
-  Идентификатор
-  Логин
-  Имя
-  Хэш_пароля
-  Роль
+entity "Пользователь" as user {
+  * id : UUID <<PK>>
+  --
+  * login : String
+  * name : String
+  * password_hash : String
+  * role : Role (USER/ADMIN)
 }
 
-entity Категория {
-  Идентификатор
-  Имя
-  Цвет
-  Тип_категории
+entity "Настройки_пользователя" as settings {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * duration_unit : DurationUnit
+  * auto_stop_enabled : Boolean
+  * max_active_duration : Long
+  * min_duration_enabled : Boolean
+  * min_duration : Long
 }
 
-entity Запись_времени {
-  Идентификатор
-  Время_начала
-  Время_окончания
-  Описание
+entity "Категория" as category {
+  * id : UUID <<PK>>
+  --
+  user_id : UUID <<FK>>
+  * name : String
+  * color_hex : String
+  * is_default : Boolean
 }
 
-entity Версия_описания {
-  Идентификатор
-  Описание
-  Время_изменения
+entity "Запись_времени" as record {
+  * id : UUID <<PK>>
+  --
+  * user_id : UUID <<FK>>
+  * category_id : UUID <<FK>>
+  * start_time : Timestamp
+  end_time : Timestamp?
+  * description : String
 }
 
-relationship Создает {
+entity "Снимок_истории_записи" as history {
+  * id : UUID <<PK>>
+  --
+  * record_id : UUID <<FK>>
+  * category_id : UUID <<FK>>
+  * start_time : Timestamp
+  end_time : Timestamp?
+  * description : String
+  * modified_at : Timestamp
 }
 
-relationship Логирует {
-}
+user ||--|| settings : "Настраивает"
+user ||--o{ category : "Создает"
+user ||--o{ record : "Логирует"
+category ||--o{ record : "Включает"
+record ||--o{ history : "Хранит снимки"
+category ||--o{ history : "Фиксирует категорию"
 
-relationship Включает {
-}
-
-relationship Хранит {
-}
-
-Пользователь -1- Создает
-Создает -N- Категория
-
-Пользователь -1- Логирует
-Логирует -N- Запись_времени
-
-Категория -1- Включает
-Включает -N- Запись_времени
-
-Запись_времени -1- Хранит
-Хранит -N- Версия_описания
-
-@endchen
+@enduml

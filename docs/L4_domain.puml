@@ -2,7 +2,7 @@
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
-package "Бизнес-логика" #E8F5E9 {
+package "Бизнес-логика (Domain)" #E8F5E9 {
 
     class User <<Entity>> {
         - id: UserId
@@ -10,6 +10,18 @@ package "Бизнес-логика" #E8F5E9 {
         - name: String
         - passwordHash: String
         - role: UserRole
+    }
+
+    class UserSettings <<Entity>> {
+        - id: SettingsId
+        - userId: UserId
+        - durationUnit: DurationUnit
+        - autoStopEnabled: Boolean
+        - maxActiveDurationValue: Long
+        - maxActiveDurationUnit: DurationUnit
+        - minDurationEnabled: Boolean
+        - minDurationValue: Long
+        - minDurationUnit: DurationUnit
     }
 
     class Category <<Entity>> {
@@ -30,15 +42,22 @@ package "Бизнес-логика" #E8F5E9 {
         + getDurationMinutes(): Long
     }
 
-    class DescriptionVersion <<Entity>> {
-        - id: VersionId
+    class RecordHistoryEntry <<Entity>> {
+        - id: HistoryId
         - recordId: RecordId
+        - categoryId: CategoryId
+        - startTime: Instant
+        - endTime: Instant?
         - description: String
         - modifiedAt: Instant
     }
 
-    class BusinessConfig <<Model>> {
-        - minDurationMinutes: Long
+    enum DurationUnit <<Enum>> {
+        SECONDS
+        MINUTES
+        HOURS
+        DAYS
+        + toSeconds(value: Long): Long
     }
 
     interface IUserRepository <<Interface>> {
@@ -49,22 +68,30 @@ package "Бизнес-логика" #E8F5E9 {
         + suspend getAllUsers(): List<User>
     }
 
+    interface IUserSettingsRepository <<Interface>> {
+        + suspend getSettingsByUserId(userId: UserId): UserSettings?
+        + suspend saveSettings(settings: UserSettings): Result<Unit>
+    }
+
     interface ITimeRecordRepository <<Interface>> {
         + suspend saveRecord(record: TimeRecord): Result<Unit>
         + suspend getRecordById(recordId: RecordId): TimeRecord?
-        + suspend getOverlappingRecords(...): List<TimeRecord>
-        + suspend getActiveSession(userId: UserId): TimeRecord?
+        + suspend getActiveRecords(userId: UserId): List<TimeRecord>
         + suspend getTimeRecords(userId: UserId): List<TimeRecord>
-        + suspend getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
-        + suspend addDescriptionVersion(version: DescriptionVersion): Result<Unit>
         + suspend deleteRecord(recordId: RecordId): Result<Unit>
         + suspend getAllTimeRecords(): List<TimeRecord>
+    }
+
+    interface IRecordHistoryRepository <<Interface>> {
+        + suspend addHistoryEntry(entry: RecordHistoryEntry): Result<Unit>
+        + suspend getHistoryForRecord(recordId: RecordId): List<RecordHistoryEntry>
+        + suspend getHistoryEntryById(historyId: HistoryId): RecordHistoryEntry?
     }
 
     interface ICategoryRepository <<Interface>> {
         + getCategoriesFlow(userId: UserId): Flow<List<Category>>
         + suspend saveCategory(category: Category): Result<Unit>
-        + suspend findCategoryByName(...): Category?
+        + suspend findCategoryByName(name: String, userId: UserId?): Category?
         + suspend deleteCategory(categoryId: CategoryId): Result<Unit>
         + suspend getAllCategories(): List<Category>
     }
@@ -74,46 +101,57 @@ package "Бизнес-логика" #E8F5E9 {
         + verify(raw: String, hashed: String): Boolean
     }
 
-    package "Сценарии" #FFFFFF {
+    package "Сценарии (Use Cases)" #FFFFFF {
         class RegisterUserUseCase <<UseCase>>
         class LoginUserUseCase <<UseCase>>
-        class GetUserInfoUseCase <<UseCase>>
-        class StartTimerUseCase <<UseCase>>
-        class StopTimerUseCase <<UseCase>>
-        class AddManualRecordUseCase <<UseCase>>
+        class ManageUserSettingsUseCase <<UseCase>>
+        class CreateTimeRecordUseCase <<UseCase>>
+        class UpdateTimeRecordUseCase <<UseCase>>
+        class RollbackRecordHistoryUseCase <<UseCase>>
+        class GetRecordHistoryUseCase <<UseCase>>
+        class AutoStopExpiredRecordsUseCase <<UseCase>>
+        class DeleteRecordUseCase <<UseCase>>
         class GetCategoriesUseCase <<UseCase>>
-        class GetTimeRecordsUseCase <<UseCase>>
         class ManageUserCategoryUseCase <<UseCase>>
         class DeleteCategoryUseCase <<UseCase>>
         class AdminManageBaseCategoryUseCase <<UseCase>>
         class AdminDeleteBaseCategoryUseCase <<UseCase>>
-        class UpdateRecordDescriptionUseCase <<UseCase>>
-        class RollbackRecordDescriptionUseCase <<UseCase>>
-        class GetDescriptionHistoryUseCase <<UseCase>>
     }
 
+    User "1" <-- "1" UserSettings : "Имеет настройки"
     User "1" <-- "*" Category : "Владеет"
     User "1" <-- "*" TimeRecord : "Владеет"
     Category "1" <-- "*" TimeRecord : "Относится к"
-    TimeRecord "1" <-- "*" DescriptionVersion : "Имеет историю"
+    TimeRecord "1" <-- "*" RecordHistoryEntry : "Имеет историю"
+    Category "1" <-- "*" RecordHistoryEntry : "Фиксирует"
 
     RegisterUserUseCase o--> IUserRepository
+    RegisterUserUseCase o--> IUserSettingsRepository
     RegisterUserUseCase o--> IPasswordHasher
+
     LoginUserUseCase o--> IUserRepository
     LoginUserUseCase o--> IPasswordHasher
-    GetUserInfoUseCase o--> IUserRepository
 
-    StartTimerUseCase o--> ITimeRecordRepository
-    StopTimerUseCase o--> ITimeRecordRepository
-    StopTimerUseCase o--> BusinessConfig
+    ManageUserSettingsUseCase o--> IUserSettingsRepository
 
-    AddManualRecordUseCase o--> ITimeRecordRepository
-    AddManualRecordUseCase o--> BusinessConfig
+    CreateTimeRecordUseCase o--> ITimeRecordRepository
+    CreateTimeRecordUseCase o--> IUserSettingsRepository
 
-    GetTimeRecordsUseCase o--> ITimeRecordRepository
-    UpdateRecordDescriptionUseCase o--> ITimeRecordRepository
-    RollbackRecordDescriptionUseCase o--> ITimeRecordRepository
-    GetDescriptionHistoryUseCase o--> ITimeRecordRepository
+    UpdateTimeRecordUseCase o--> ITimeRecordRepository
+    UpdateTimeRecordUseCase o--> IRecordHistoryRepository
+    UpdateTimeRecordUseCase o--> IUserSettingsRepository
+
+    RollbackRecordHistoryUseCase o--> ITimeRecordRepository
+    RollbackRecordHistoryUseCase o--> IRecordHistoryRepository
+
+    GetRecordHistoryUseCase o--> ITimeRecordRepository
+    GetRecordHistoryUseCase o--> IRecordHistoryRepository
+
+    AutoStopExpiredRecordsUseCase o--> ITimeRecordRepository
+    AutoStopExpiredRecordsUseCase o--> IUserSettingsRepository
+    AutoStopExpiredRecordsUseCase o--> IRecordHistoryRepository
+
+    DeleteRecordUseCase o--> ITimeRecordRepository
 
     GetCategoriesUseCase o--> ICategoryRepository
     ManageUserCategoryUseCase o--> ICategoryRepository

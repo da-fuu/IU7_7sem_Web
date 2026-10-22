@@ -6,7 +6,7 @@ skinparam ParticipantPadding 20
 actor "Администратор" as admin
 boundary "AdminScreen\n(UI Compose)" as ui
 control "AdminViewModel\n(Presentation)" as vm
-control "CreateCategoryUseCase\n(Domain)" as uc
+control "AdminManageBaseCategoryUseCase\n(Domain)" as uc
 database "CategoryRepository\n(Data)" as repo
 
 admin -> ui : Открывает панель администратора

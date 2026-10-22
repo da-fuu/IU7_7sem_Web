@@ -1,1 +1,135 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" data-diagram-type="DESCRIPTION" style="width:528px;height:509px;background:#FFFFFF;" width="528px" height="509px" viewBox="0 0 528 509" zoomAndPan="magnify" preserveAspectRatio="none" contentStyleType="text/css"><?plantuml 1.2026.8beta1?><defs/><g font-family="sans-serif" lengthAdjust="spacing"><!--entity user--><g class="entity" data-qualified-name="user" id="ent0001" data-source-line="178"><rect x="7" y="7" width="207.12" height="202.067" fill="#08427B" style="stroke:#073B6F;stroke-width:0.5;"/><text x="82.652" y="28.139" fill="#FFF" font-size="12" textLength="55.816" font-style="italic">«person»</text><image width="52" height="52" x="84.714" y="30.969" xlink:href="data:image/png;base64,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"/><text x="45.865" y="97.513" fill="#FFF" font-size="16" textLength="129.391" font-weight="700">Пользователь</text><text x="108.335" y="114.281" fill="#FFF" font-size="14"> </text><text x="21.72" y="130.578" fill="#FFF" font-size="14" textLength="71.504">Основной</text><text x="93.224" y="130.578" fill="#FFF" font-size="14"> </text><text x="97.674" y="130.578" fill="#FFF" font-size="14" textLength="101.726">пользователь</text><text x="19.225" y="146.875" fill="#FFF" font-size="14" textLength="97.877">веб-системы.</text><text x="117.102" y="146.875" fill="#FFF" font-size="14"> </text><text x="121.552" y="146.875" fill="#FFF" font-size="14" textLength="80.343">Фиксирует</text><text x="45.096" y="163.172" fill="#FFF" font-size="14" textLength="49.185">время,</text><text x="94.28" y="163.172" fill="#FFF" font-size="14"> </text><text x="98.73" y="163.172" fill="#FFF" font-size="14" textLength="77.294">управляет</text><text x="25.121" y="179.469" fill="#FFF" font-size="14" textLength="66.186">личными</text><text x="91.307" y="179.469" fill="#FFF" font-size="14"> </text><text x="95.757" y="179.469" fill="#FFF" font-size="14" textLength="100.242">категориями,</text><text x="17" y="195.766" fill="#FFF" font-size="14" textLength="94.842">анализирует</text><text x="111.842" y="195.766" fill="#FFF" font-size="14"> </text><text x="116.292" y="195.766" fill="#FFF" font-size="14" textLength="87.828">статистику.</text></g><!--entity admin--><g class="entity" data-qualified-name="admin" id="ent0002" data-source-line="178"><rect x="249.33" y="7" width="208.467" height="202.067" fill="#08427B" style="stroke:#073B6F;stroke-width:0.5;"/><text x="325.655" y="28.139" fill="#FFF" font-size="12" textLength="55.816" font-style="italic">«person»</text><image width="52" height="52" x="327.717" y="30.969" xlink:href="data:image/png;base64,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"/><text x="281.27" y="97.513" fill="#FFF" font-size="16" textLength="144.586" font-weight="700">Администратор</text><text x="351.338" y="114.281" fill="#FFF" font-size="14"> </text><text x="277.254" y="130.578" fill="#FFF" font-size="14" textLength="152.619">Привилегированный</text><text x="259.48" y="146.875" fill="#FFF" font-size="14" textLength="106.176">пользователь.</text><text x="365.656" y="146.875" fill="#FFF" font-size="14"> </text><text x="370.106" y="146.875" fill="#FFF" font-size="14" textLength="77.54">Управляет</text><text x="265.67" y="163.172" fill="#FFF" font-size="14" textLength="99.148">глобальными</text><text x="364.819" y="163.172" fill="#FFF" font-size="14"> </text><text x="369.269" y="163.172" fill="#FFF" font-size="14" textLength="72.188">базовыми</text><text x="298.893" y="179.469" fill="#FFF" font-size="14" textLength="95.792">категориями</text><text x="394.685" y="179.469" fill="#FFF" font-size="14"> </text><text x="399.135" y="179.469" fill="#FFF" font-size="14">и</text><text x="259.33" y="195.766" fill="#FFF" font-size="14" textLength="116.689">конфигурацией</text><text x="376.019" y="195.766" fill="#FFF" font-size="14"> </text><text x="380.47" y="195.766" fill="#FFF" font-size="14" textLength="67.327">системы.</text></g><!--entity time_tracker_web--><g class="entity" data-qualified-name="time_tracker_web" id="ent0003" data-source-line="197"><rect x="124.01" y="326.07" width="215.104" height="169" fill="#1168BD" style="stroke:#3C7FC0;stroke-width:0.5;"/><text x="202.529" y="347.209" fill="#FFF" font-size="12" textLength="58.066" font-style="italic">«system»</text><text x="152.605" y="364.89" fill="#FFF" font-size="16" textLength="112.391" font-weight="700">TimeTracker</text><text x="264.996" y="364.89" fill="#FFF" font-size="16" font-weight="700"> </text><text x="270.566" y="364.89" fill="#FFF" font-size="16" textLength="39.953" font-weight="700">Web</text><text x="198.238" y="383.515" fill="#FFF" font-size="16" textLength="66.648" font-weight="700">System</text><text x="229.337" y="400.284" fill="#FFF" font-size="14"> </text><text x="170.295" y="416.581" fill="#FFF" font-size="14" textLength="122.534">Распределенная</text><text x="144.934" y="432.878" fill="#FFF" font-size="14" textLength="90.952">веб-система</text><text x="235.886" y="432.878" fill="#FFF" font-size="14"> </text><text x="240.336" y="432.878" fill="#FFF" font-size="14" textLength="27.05">для</text><text x="267.386" y="432.878" fill="#FFF" font-size="14"> </text><text x="271.836" y="432.878" fill="#FFF" font-size="14" textLength="46.354">учета,</text><text x="169.058" y="449.174" fill="#FFF" font-size="14" textLength="111.46">категоризации</text><text x="280.518" y="449.174" fill="#FFF" font-size="14"> </text><text x="284.968" y="449.174" fill="#FFF" font-size="14">и</text><text x="134.01" y="465.471" fill="#FFF" font-size="14" textLength="79.167">аналитики</text><text x="213.177" y="465.471" fill="#FFF" font-size="14"> </text><text x="217.627" y="465.471" fill="#FFF" font-size="14" textLength="111.487">персонального</text><text x="197.748" y="481.768" fill="#FFF" font-size="14" textLength="67.628">времени.</text></g><!--link user to time_tracker_web--><g class="link" data-entity-1="ent0001" data-entity-2="ent0003" id="lnk4" data-source-line="1779" data-link-type="dependency"><path d="M107.07,209.13 C109.21,238.16 114.71,269.24 126.56,296.07 C131.12,306.38 132.401,309.824 139.061,319.304" style="stroke:#666;stroke-width:1;" fill="none" id="user-to-time_tracker_web"/><polygon points="143.66,325.85,141.516,317.579,136.606,321.028,143.66,325.85" fill="#666" style="stroke:#666;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:10;"/><text x="127.56" y="258.209" fill="#666" font-size="12" textLength="92.332" font-weight="700">Отслеживает</text><text x="219.892" y="258.209" fill="#666" font-size="12" font-weight="700"> </text><text x="224.07" y="258.209" fill="#666" font-size="12" textLength="41.836" font-weight="700">время</text><text x="265.906" y="258.209" fill="#666" font-size="12" font-weight="700"> </text><text x="270.083" y="258.209" fill="#666" font-size="12" textLength="40.078" font-weight="700">через</text><text x="153.218" y="272.177" fill="#666" font-size="12" textLength="29.965" font-weight="700">Web</text><text x="183.183" y="272.177" fill="#666" font-size="12" font-weight="700"> </text><text x="187.361" y="272.177" fill="#666" font-size="12" textLength="26.725" font-weight="700">SPA</text><text x="214.085" y="272.177" fill="#666" font-size="12" font-weight="700"> </text><text x="218.263" y="272.177" fill="#666" font-size="12" font-weight="700">/</text><text x="222.646" y="272.177" fill="#666" font-size="12" font-weight="700"> </text><text x="226.824" y="272.177" fill="#666" font-size="12" textLength="22.547" font-weight="700">API</text><text x="249.371" y="272.177" fill="#666" font-size="12" font-weight="700"> </text><text x="253.548" y="272.177" fill="#666" font-size="12" font-weight="700">/</text><text x="257.931" y="272.177" fill="#666" font-size="12" font-weight="700"> </text><text x="262.109" y="272.177" fill="#666" font-size="12" textLength="22.395" font-weight="700">TUI</text><text x="173.641" y="286.146" fill="#666" font-size="12" textLength="43.219" font-style="italic">[HTTPS</text><text x="216.86" y="286.146" fill="#666" font-size="12" font-style="italic"> </text><text x="220.674" y="286.146" fill="#666" font-size="12" font-style="italic">/</text><text x="224.717" y="286.146" fill="#666" font-size="12" font-style="italic"> </text><text x="228.532" y="286.146" fill="#666" font-size="12" textLength="35.549" font-style="italic">REST]</text></g><!--link admin to time_tracker_web--><g class="link" data-entity-1="ent0002" data-entity-2="ent0003" id="lnk5" data-source-line="1779" data-link-type="dependency"><path d="M340.74,209.54 C334.93,238.27 326.56,269.1 314.56,296.07 C310.1,306.11 308.836,309.309 302.866,318.999" style="stroke:#666;stroke-width:1;" fill="none" id="admin-to-time_tracker_web"/><polygon points="298.67,325.81,305.42,320.573,300.312,317.425,298.67,325.81" fill="#666" style="stroke:#666;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:10;"/><text x="333.56" y="251.209" fill="#666" font-size="12" textLength="116.467" font-weight="700">Администрирует</text><text x="450.027" y="251.209" fill="#666" font-size="12" font-weight="700"> </text><text x="454.205" y="251.209" fill="#666" font-size="12" textLength="58.277" font-weight="700">базовые</text><text x="348.853" y="265.177" fill="#666" font-size="12" textLength="75.814" font-weight="700">категории,</text><text x="424.667" y="265.177" fill="#666" font-size="12" font-weight="700"> </text><text x="428.845" y="265.177" fill="#666" font-size="12" textLength="49.096" font-weight="700">следит</text><text x="477.941" y="265.177" fill="#666" font-size="12" font-weight="700"> </text><text x="482.119" y="265.177" fill="#666" font-size="12" textLength="15.07" font-weight="700">за</text><text x="373.24" y="279.146" fill="#666" font-size="12" textLength="99.563" font-weight="700">мониторингом</text><text x="377.801" y="293.115" fill="#666" font-size="12" textLength="43.219" font-style="italic">[HTTPS</text><text x="421.02" y="293.115" fill="#666" font-size="12" font-style="italic"> </text><text x="424.834" y="293.115" fill="#666" font-size="12" font-style="italic">/</text><text x="428.877" y="293.115" fill="#666" font-size="12" font-style="italic"> </text><text x="432.692" y="293.115" fill="#666" font-size="12" textLength="35.549" font-style="italic">REST]</text></g><?plantuml-src VLBBJW914Bpp5IqdJH0l7es9CIPw8xB68r6S0n7Gm1BrniFeGHFy0ZNH3q1nTHLs-OMUFxAwPqNZeeTzJ4zrTLLtprNgvMhhmD1AUNbfVRcqVbJtpQcVFsxLggkPJC4qcaVr-LRJD7AKvJkEUMIl-GtVPnxOBWTopihThUrmf75vlnDFPeC9Xu2V5W4FRKUZOtkL9txaa3yqshOz3cmNIDlMwtwE49hWD43soFRTzGZOIuxi5Oyv9Fv8YWmv1Z842k4S8IV20p2aV9DhRKbmAgHsBvzT-BAyTr2hrCNN3Ry83pWKA1e0HmLrVIULe2a4lrG6lxCBl0Zxkmzm_92sD0HFp4-Y5obJQnBG_7-zahk9aNSEHKFRKxKN-0-Wv5V7uJLJF6lwfZRlLsgcv3VsoeUcKJen-t3c8UIv2EsQVN98zNmFpevA3z2RG9r7qcFRdpLS7X1WS8WPObo1j3sNSW1xJgbpCPsP6us49aXjWpXsLz8U_2DzkYUg8rHZswQQREqCRzZLBeX4zwjER_1htKXrok7DcI-iqHAj5RRmzdQsf0kRdbSeuhYzKVHGKEebApEhO7g9Vcpvp-46wSPWXHEnBz8EaauHs69bwoQeIF0yJalx1000?></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="493px" preserveAspectRatio="none" style="width:497px;height:493px;" version="1.1" viewBox="0 0 497 493" width="497px" zoomAndPan="magnify"><defs/><g><!--MD5=[8fc3522a43f8c7199df5e09e5bb0188e]
+entity user--><rect fill="#08427B" height="172.5437" style="stroke: #073B6F; stroke-width: 1.5;" width="217" x="6" y="7.98"/><text fill="#FFFFFF" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacingAndGlyphs" textLength="49" x="90" y="30.8081">«person»</text><text fill="#FFFFFF" font-family="sans-serif" font-size="16" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="119" x="55" y="51.4281">Пользователь</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="0" x="116.5" y="71.0821"/><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="196" x="16.5" y="90.15">Основной пользователь веб</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="197" x="16" y="109.2179">-системы. Фиксирует время,</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="141" x="42" y="128.2858">управляет личными</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="186" x="19.5" y="147.3538">категориями, анализирует</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="79" x="75" y="166.4217">статистику.</text><!--MD5=[79a439086b036a57b90a01d7b2f8bbd1]
+entity admin--><rect fill="#08427B" height="172.5437" style="stroke: #073B6F; stroke-width: 1.5;" width="201" x="258" y="7.98"/><text fill="#FFFFFF" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacingAndGlyphs" textLength="49" x="334" y="30.8081">«person»</text><text fill="#FFFFFF" font-family="sans-serif" font-size="16" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="137" x="290" y="51.4281">Администратор</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="0" x="360.5" y="71.0821"/><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="147" x="283" y="90.15">Привилегированный</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="177" x="268" y="109.2179">пользователь. Управляет</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="166" x="273.5" y="128.2858">глобальными базовыми</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="102" x="305.5" y="147.3538">категориями и</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="175" x="271" y="166.4217">конфигурацией системы.</text><!--MD5=[7d1ab73ab3cfdd770bb010d88abb854e]
+entity time_tracker_web--><rect fill="#1168BD" height="153.4757" style="stroke: #3C7FC0; stroke-width: 1.5;" width="219" x="127" y="329.52"/><text fill="#FFFFFF" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacingAndGlyphs" textLength="49" x="212" y="352.3481">«system»</text><text fill="#FFFFFF" font-family="sans-serif" font-size="16" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="199" x="137" y="372.9681">TimeTracker Web System</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="0" x="238.5" y="392.6221"/><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="148" x="162.5" y="411.69">Распределенная веб-</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="131" x="169" y="430.7579">система для учета,</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="195" x="137" y="449.8258">категоризации и аналитики</text><text fill="#FFFFFF" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="174" x="149.5" y="468.8938">персонального времени.</text><!--MD5=[01b656c5724b6ae87c982f9c7920bd06]
+link user to time_tracker_web--><path d="M132.1,180.88 C141.25,218.18 154.01,261.88 170.5,299.52 C174.03,307.58 178.1,315.74 182.45,323.77 " fill="none" id="user-&gt;time_tracker_web" style="stroke: #666666; stroke-width: 1.0;"/><polygon fill="#666666" points="184.77,327.98,183.9339,318.1667,182.3588,323.5998,176.9256,322.0247,184.77,327.98" style="stroke: #666666; stroke-width: 1.0;"/><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="137" x="173" y="234.417">Отслеживает время</text><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="140" x="171.5" y="252.123">через Web SPA / API /</text><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="23" x="231.5" y="269.829">TUI</text><text fill="#666666" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacingAndGlyphs" textLength="74" x="206" y="286.4661">[HTTPS / REST]</text><!--MD5=[9931b91d493916764f59dd12f4f3fcd5]
+link admin to time_tracker_web--><path d="M351.33,181 C345.89,218.63 336.32,262.55 319.5,299.52 C315.77,307.72 311.28,315.85 306.34,323.75 " fill="none" id="admin-&gt;time_tracker_web" style="stroke: #666666; stroke-width: 1.0;"/><polygon fill="#666666" points="303.67,327.9,311.9015,322.4924,306.3738,323.6941,305.1721,318.1664,303.67,327.9" style="stroke: #666666; stroke-width: 1.0;"/><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="117" x="356.42" y="225.417">Администрирует</text><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="136" x="346.92" y="243.123">базовые категории,</text><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="66" x="381.92" y="260.829">следит за</text><text fill="#666666" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="103" x="364.92" y="278.5351">мониторингом</text><text fill="#666666" font-family="sans-serif" font-size="12" font-style="italic" lengthAdjust="spacingAndGlyphs" textLength="74" x="379.42" y="295.1722">[HTTPS / REST]</text><!--MD5=[52025de9dffc03a9bfbf435ecd2b1689]
+@startuml
+
+
+
+
+
+skinparam defaultTextAlignment center
+
+skinparam wrapWidth 200
+skinparam maxMessageSize 150
+
+skinparam rectangle {
+    StereotypeFontSize 12
+    shadowing false
+}
+
+skinparam database {
+    StereotypeFontSize 12
+    shadowing false
+}
+
+skinparam Arrow {
+    Color #666666
+    FontColor #666666
+    FontSize 12
+}
+
+skinparam rectangle<<boundary>> {
+    Shadowing false
+    StereotypeFontSize 0
+    FontColor #444444
+    BorderColor #444444
+    BorderStyle dashed
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+skinparam rectangle<<person>> {
+    StereotypeFontColor #FFFFFF
+    FontColor #FFFFFF
+    BackgroundColor #08427B
+    BorderColor #073B6F
+}
+
+skinparam rectangle<<external_person>> {
+    StereotypeFontColor #FFFFFF
+    FontColor #FFFFFF
+    BackgroundColor #686868
+    BorderColor #8A8A8A
+}
+
+skinparam rectangle<<system>> {
+    StereotypeFontColor #FFFFFF
+    FontColor #FFFFFF
+    BackgroundColor #1168BD
+    BorderColor #3C7FC0
+}
+
+skinparam rectangle<<external_system>> {
+    StereotypeFontColor #FFFFFF
+    FontColor #FFFFFF
+    BackgroundColor #999999
+    BorderColor #8A8A8A
+}
+
+skinparam database<<system>> {
+    StereotypeFontColor #FFFFFF
+    FontColor #FFFFFF
+    BackgroundColor #1168BD
+    BorderColor #3C7FC0
+}
+
+skinparam database<<external_system>> {
+    StereotypeFontColor #FFFFFF
+    FontColor #FFFFFF
+    BackgroundColor #999999
+    BorderColor #8A8A8A
+}
+
+
+
+
+
+
+
+
+
+
+
+
+rectangle "==Пользователь\n\n Основной пользователь веб-системы. Фиксирует время, управляет личными категориями, анализирует статистику." <<person>> as user
+rectangle "==Администратор\n\n Привилегированный пользователь. Управляет глобальными базовыми категориями и конфигурацией системы." <<person>> as admin
+
+rectangle "==TimeTracker Web System\n\n Распределенная веб-система для учета, категоризации и аналитики персонального времени." <<system>> as time_tracker_web
+
+user - -> time_tracker_web : "===Отслеживает время через Web SPA / API / TUI\n//<size:12>[HTTPS / REST]</size>//"
+admin - -> time_tracker_web : "===Администрирует базовые категории, следит за мониторингом\n//<size:12>[HTTPS / REST]</size>//"
+
+@enduml
+
+PlantUML version 1.2020.02(Sun Mar 01 13:22:07 MSK 2020)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Java Version: 25.0.5+8-1-Debian
+Operating System: Linux
+Default Encoding: UTF-8
+Language: en
+Country: US
+--></g></svg>

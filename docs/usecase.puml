@@ -9,13 +9,15 @@ admin -|> user
 
 rectangle "TimeTracker" {
   usecase "Зарегистрироваться" as UC_Register
-  usecase "Войти" as UC_Login
-  usecase "Запустить/остановить таймер" as UC_Timer
+  usecase "Войти в систему" as UC_Login
+  usecase "Запустить/остановить активную задачу" as UC_Timer
   usecase "Добавить запись времени вручную" as UC_Manual
+  usecase "Настроить предпочтения и лимиты" as UC_ManageSettings
   usecase "Управлять личными категориями" as UC_ManageOwnCategories
-  usecase "Изменить описание записи" as UC_UpdateDesc
-  usecase "Просмотреть историю описаний" as UC_ViewHistory
-  usecase "Откатить описание к версии" as UC_RollbackDesc
+  usecase "Редактировать параметры записи" as UC_UpdateRecord
+  usecase "Просмотреть историю изменений записи" as UC_ViewHistory
+  usecase "Откатить запись к версии" as UC_RollbackRecord
+  usecase "Удалить запись времени" as UC_DeleteRecord
 
   usecase "Управлять базовыми категориями" as UC_ManageDefaultCategories
 }
@@ -25,10 +27,12 @@ guest --> UC_Login
 
 user --> UC_Timer
 user --> UC_Manual
+user --> UC_ManageSettings
 user --> UC_ManageOwnCategories
-user --> UC_UpdateDesc
+user --> UC_UpdateRecord
 user --> UC_ViewHistory
-user --> UC_RollbackDesc
+user --> UC_RollbackRecord
+user --> UC_DeleteRecord
 
 admin --> UC_ManageDefaultCategories
 

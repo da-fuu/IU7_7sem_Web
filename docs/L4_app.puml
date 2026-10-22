@@ -40,12 +40,12 @@ package "Графический интерфейс" #E3F2FD {
         class RecordsViewModel <<ViewModel>> {
             + records: StateFlow<List<TimeRecord>>
             + categories: StateFlow<List<Category>>
-            + historyList: StateFlow<List<DescriptionVersion>>
+            + historyList: StateFlow<List<RecordHistoryEntry>>
             + selectedRecordIdForHistory: StateFlow<RecordId?>
             + addManualRecord(catId, start, end, desc)
             + loadHistory(recordId)
-            + updateDescription(recordId, newDesc)
-            + rollbackDescription(recordId, versionId)
+            + updateRecord(recordId, start, end, catId, newDesc)
+            + rollbackRecord(recordId, historyId)
         }
 
         class MigrationViewModel <<ViewModel>> {
