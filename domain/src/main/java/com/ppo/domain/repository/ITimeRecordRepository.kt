@@ -1,6 +1,6 @@
 package com.ppo.domain.repository
 
-import com.ppo.domain.model.DescriptionVersion
+import com.ppo.domain.model.RecordHistoryEntry
 import com.ppo.domain.model.RecordId
 import com.ppo.domain.model.TimeRecord
 import com.ppo.domain.model.UserId
@@ -14,12 +14,12 @@ interface ITimeRecordRepository {
         start: Instant,
         end: Instant?,
         excludeRecordId: RecordId? = null
-    ): List<TimeRecord>
+    ): List<TimeRecord> = emptyList()
 
-    suspend fun getActiveSession(userId: UserId): TimeRecord?
+    suspend fun getActiveSession(userId: UserId): TimeRecord? =
+        getActiveRecords(userId).firstOrNull()
+
     suspend fun getTimeRecords(userId: UserId): List<TimeRecord>
-    suspend fun getDescriptionHistory(recordId: RecordId): List<DescriptionVersion>
-    suspend fun addDescriptionVersion(version: DescriptionVersion): Result<Unit>
     suspend fun deleteRecord(recordId: RecordId): Result<Unit>
     suspend fun getAllTimeRecords(): List<TimeRecord>
     suspend fun getActiveRecords(userId: UserId? = null): List<TimeRecord> =
@@ -28,4 +28,7 @@ interface ITimeRecordRepository {
         } else {
             getAllTimeRecords().filter { it.endTime == null }
         }
+
+    suspend fun getDescriptionHistory(recordId: RecordId): List<RecordHistoryEntry> = emptyList()
+    suspend fun addDescriptionVersion(version: RecordHistoryEntry): Result<Unit> = Result.success(Unit)
 }

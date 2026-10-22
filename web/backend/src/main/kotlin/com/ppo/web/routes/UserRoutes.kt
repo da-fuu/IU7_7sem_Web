@@ -5,6 +5,7 @@ import com.ppo.domain.model.UserId
 import com.ppo.domain.model.UserRole
 import com.ppo.domain.repository.IUserRepository
 import com.ppo.domain.repository.IUserSettingsRepository
+import com.ppo.domain.usecase.ManageUserSettingsUseCase
 import com.ppo.web.dto.UserSettingsUpdateRequestDto
 import com.ppo.web.dto.toDto
 import io.ktor.http.HttpStatusCode
@@ -19,7 +20,8 @@ import java.util.UUID
 
 fun Route.userRoutes(
     userRepository: IUserRepository,
-    userSettingsRepository: IUserSettingsRepository
+    userSettingsRepository: IUserSettingsRepository,
+    manageUserSettingsUseCase: ManageUserSettingsUseCase = ManageUserSettingsUseCase(userSettingsRepository)
 ) {
     route("/api/v1/users/{userId}") {
         get {
@@ -70,7 +72,7 @@ fun Route.userRoutes(
                     )
                 }
 
-                val settings = userSettingsRepository.getSettings(targetUserId)
+                val settings = manageUserSettingsUseCase.getSettings(targetUserId)
                 call.respond(HttpStatusCode.OK, settings.toDto())
             }
 
@@ -102,7 +104,7 @@ fun Route.userRoutes(
                     return@patch call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный JSON")
                 }
 
-                val current = userSettingsRepository.getSettings(targetUserId)
+                val current = manageUserSettingsUseCase.getSettings(targetUserId)
 
                 val maxDurationVal = req.maxActiveDurationValue ?: current.maxActiveDurationValue
                 if (maxDurationVal < 1) {
@@ -147,8 +149,11 @@ fun Route.userRoutes(
                     minDurationUnit = minDurationUnit
                 )
 
-                userSettingsRepository.updateSettings(updated)
-                call.respond(HttpStatusCode.OK, updated.toDto())
+                val result = manageUserSettingsUseCase.updateSettings(updated)
+                result.fold(
+                    onSuccess = { call.respond(HttpStatusCode.OK, it.toDto()) },
+                    onFailure = { call.respondError(HttpStatusCode.BadRequest, "VALIDATION_ERROR", it.message ?: "Ошибка") }
+                )
             }
         }
     }

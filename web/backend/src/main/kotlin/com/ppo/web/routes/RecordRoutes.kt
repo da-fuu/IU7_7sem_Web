@@ -5,6 +5,7 @@ import com.ppo.domain.repository.ICategoryRepository
 import com.ppo.domain.repository.IRecordHistoryRepository
 import com.ppo.domain.repository.ITimeRecordRepository
 import com.ppo.domain.repository.IUserSettingsRepository
+import com.ppo.domain.usecase.*
 import com.ppo.web.data.repository.PostgresTimeRecordRepository
 import com.ppo.web.dto.*
 import com.ppo.web.service.AutoStopWorker
@@ -13,7 +14,6 @@ import io.ktor.server.application.call
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.*
-import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -22,7 +22,10 @@ fun Route.recordRoutes(
     categoryRepository: ICategoryRepository,
     userSettingsRepository: IUserSettingsRepository,
     recordHistoryRepository: IRecordHistoryRepository,
-    autoStopWorker: AutoStopWorker = AutoStopWorker(timeRecordRepository, userSettingsRepository, recordHistoryRepository)
+    createTimeRecordUseCase: CreateTimeRecordUseCase = CreateTimeRecordUseCase(timeRecordRepository, categoryRepository, userSettingsRepository),
+    updateTimeRecordUseCase: UpdateTimeRecordUseCase = UpdateTimeRecordUseCase(timeRecordRepository, categoryRepository, userSettingsRepository, recordHistoryRepository),
+    deleteRecordUseCase: DeleteRecordUseCase = DeleteRecordUseCase(timeRecordRepository),
+    autoStopWorker: AutoStopWorker = AutoStopWorker(AutoStopExpiredRecordsUseCase(timeRecordRepository, userSettingsRepository, recordHistoryRepository))
 ) {
     route("/api/v1/records") {
         get {
@@ -90,11 +93,6 @@ fun Route.recordRoutes(
                 return@post call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный UUID категории")
             }
 
-            val category = categoryRepository.findCategoryById(categoryId)
-            if (category == null) {
-                return@post call.respondError(HttpStatusCode.NotFound, "CATEGORY_NOT_FOUND", "Категория '${req.categoryId}' не найдена")
-            }
-
             val startTime = if (req.startTime != null) {
                 try { Instant.parse(req.startTime) } catch (e: Exception) {
                     return@post call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный ISO-8601 формат startTime")
@@ -107,30 +105,9 @@ fun Route.recordRoutes(
                 }
             } else null
 
-            val settings = userSettingsRepository.getSettings(authUser.userId)
-
-            if (endTime != null) {
-                if (!endTime.isAfter(startTime)) {
-                    return@post call.respondError(
-                        HttpStatusCode.UnprocessableEntity, "INVALID_TIME_RANGE", "Время окончания должно быть строго позже времени начала"
-                    )
-                }
-
-                if (settings.minDurationEnabled) {
-                    val minSec = DurationConverter.toSeconds(settings.minDurationValue, settings.minDurationUnit)
-                    val actualSec = Duration.between(startTime, endTime).seconds
-                    if (actualSec < minSec) {
-                        return@post call.respondError(
-                            HttpStatusCode.UnprocessableEntity, "DURATION_TOO_SHORT", "Длительность записи менее минимального порога ($minSec сек)"
-                        )
-                    }
-                }
-            }
-
             autoStopWorker.processExpiredRecordsForUser(authUser.userId)
 
-            val record = TimeRecord(
-                id = RecordId(UUID.randomUUID()),
+            val result = createTimeRecordUseCase(
                 userId = authUser.userId,
                 categoryId = categoryId,
                 startTime = startTime,
@@ -138,8 +115,18 @@ fun Route.recordRoutes(
                 description = req.description ?: ""
             )
 
-            timeRecordRepository.saveRecord(record)
-            call.respond(HttpStatusCode.Created, record.toDto())
+            result.fold(
+                onSuccess = { call.respond(HttpStatusCode.Created, it.toDto()) },
+                onFailure = { error ->
+                    when (error) {
+                        is NoSuchElementException -> call.respondError(HttpStatusCode.NotFound, "CATEGORY_NOT_FOUND", "Категория '${req.categoryId}' не найдена")
+                        is IllegalAccessException -> call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", error.message ?: "Доступ запрещен")
+                        is IllegalArgumentException -> call.respondError(HttpStatusCode.UnprocessableEntity, "INVALID_TIME_RANGE", "Время окончания должно быть строго позже времени начала")
+                        is IllegalStateException -> call.respondError(HttpStatusCode.UnprocessableEntity, "DURATION_TOO_SHORT", error.message ?: "Длительность менее минимального порога")
+                        else -> call.respondError(HttpStatusCode.InternalServerError, "INTERNAL_ERROR", error.message ?: "Внутренняя ошибка")
+                    }
+                }
+            )
         }
 
         route("/{recordId}") {
@@ -177,15 +164,6 @@ fun Route.recordRoutes(
                     return@put call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный UUID записи")
                 }
 
-                val existing = timeRecordRepository.getRecordById(recordId)
-                if (existing == null) {
-                    return@put call.respondError(HttpStatusCode.NotFound, "RECORD_NOT_FOUND", "Запись '$recIdStr' не найдена")
-                }
-
-                if (existing.userId != authUser.userId && authUser.role != UserRole.ADMIN) {
-                    return@put call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", "Доступ к чужой записи запрещен")
-                }
-
                 val req = try {
                     call.receive<TimeRecordUpdateRequestDto>()
                 } catch (e: Exception) {
@@ -198,10 +176,6 @@ fun Route.recordRoutes(
                     return@put call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный UUID категории")
                 }
 
-                if (categoryRepository.findCategoryById(categoryId) == null) {
-                    return@put call.respondError(HttpStatusCode.NotFound, "CATEGORY_NOT_FOUND", "Категория '${req.categoryId}' не найдена")
-                }
-
                 val startTime = try { Instant.parse(req.startTime) } catch (e: Exception) {
                     return@put call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный формат startTime")
                 }
@@ -212,45 +186,34 @@ fun Route.recordRoutes(
                     }
                 } else null
 
-                val settings = userSettingsRepository.getSettings(existing.userId)
-
-                if (endTime != null) {
-                    if (!endTime.isAfter(startTime)) {
-                        return@put call.respondError(
-                            HttpStatusCode.UnprocessableEntity, "INVALID_TIME_RANGE", "Время окончания должно быть строго позже времени начала"
-                        )
-                    }
-
-                    if (settings.minDurationEnabled) {
-                        val minSec = DurationConverter.toSeconds(settings.minDurationValue, settings.minDurationUnit)
-                        val actualSec = Duration.between(startTime, endTime).seconds
-                        if (actualSec < minSec) {
-                            return@put call.respondError(
-                                HttpStatusCode.UnprocessableEntity, "DURATION_TOO_SHORT", "Длительность менее минимального порога ($minSec сек)"
-                            )
-                        }
-                    }
-                }
-
-                val historyEntry = RecordHistoryEntry(
-                    id = VersionId(UUID.randomUUID()),
-                    recordId = existing.id,
-                    categoryId = existing.categoryId,
-                    startTime = existing.startTime,
-                    endTime = existing.endTime,
-                    description = existing.description,
-                    modifiedAt = Instant.now()
-                )
-                recordHistoryRepository.saveHistoryEntry(historyEntry)
-
-                val updated = existing.copy(
+                val result = updateTimeRecordUseCase(
+                    recordId = recordId,
+                    requestUserId = authUser.userId,
+                    isAdmin = authUser.role == UserRole.ADMIN,
                     categoryId = categoryId,
                     startTime = startTime,
                     endTime = endTime,
                     description = req.description
                 )
-                timeRecordRepository.saveRecord(updated)
-                call.respond(HttpStatusCode.OK, updated.toDto())
+
+                result.fold(
+                    onSuccess = { call.respond(HttpStatusCode.OK, it.toDto()) },
+                    onFailure = { error ->
+                        when (error) {
+                            is NoSuchElementException -> {
+                                if (error.message?.contains("Category") == true) {
+                                    call.respondError(HttpStatusCode.NotFound, "CATEGORY_NOT_FOUND", "Категория '${req.categoryId}' не найдена")
+                                } else {
+                                    call.respondError(HttpStatusCode.NotFound, "RECORD_NOT_FOUND", "Запись '$recIdStr' не найдена")
+                                }
+                            }
+                            is IllegalAccessException -> call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", "Доступ к чужой записи запрещен")
+                            is IllegalArgumentException -> call.respondError(HttpStatusCode.UnprocessableEntity, "INVALID_TIME_RANGE", "Время окончания должно быть строго позже времени начала")
+                            is IllegalStateException -> call.respondError(HttpStatusCode.UnprocessableEntity, "DURATION_TOO_SHORT", error.message ?: "Длительность менее минимального порога")
+                            else -> call.respondError(HttpStatusCode.InternalServerError, "INTERNAL_ERROR", error.message ?: "Внутренняя ошибка")
+                        }
+                    }
+                )
             }
 
             patch {
@@ -264,15 +227,6 @@ fun Route.recordRoutes(
                     return@patch call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный UUID записи")
                 }
 
-                val existing = timeRecordRepository.getRecordById(recordId)
-                if (existing == null) {
-                    return@patch call.respondError(HttpStatusCode.NotFound, "RECORD_NOT_FOUND", "Запись '$recIdStr' не найдена")
-                }
-
-                if (existing.userId != authUser.userId && authUser.role != UserRole.ADMIN) {
-                    return@patch call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", "Доступ к чужой записи запрещен")
-                }
-
                 val req = try {
                     call.receive<TimeRecordPatchRequestDto>()
                 } catch (e: Exception) {
@@ -280,68 +234,53 @@ fun Route.recordRoutes(
                 }
 
                 val newCategoryId = if (req.categoryId != null) {
-                    val catId = try {
+                    try {
                         CategoryId(UUID.fromString(req.categoryId))
                     } catch (e: Exception) {
                         return@patch call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный UUID категории")
                     }
-                    if (categoryRepository.findCategoryById(catId) == null) {
-                        return@patch call.respondError(HttpStatusCode.NotFound, "CATEGORY_NOT_FOUND", "Указанная категория не найдена")
-                    }
-                    catId
-                } else existing.categoryId
+                } else null
 
                 val newStartTime = if (req.startTime != null) {
                     try { Instant.parse(req.startTime) } catch (e: Exception) {
                         return@patch call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный формат startTime")
                     }
-                } else existing.startTime
+                } else null
 
                 val newEndTime = if (req.endTime != null) {
                     try { Instant.parse(req.endTime) } catch (e: Exception) {
                         return@patch call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный формат endTime")
                     }
-                } else existing.endTime
+                } else null
 
-                val settings = userSettingsRepository.getSettings(existing.userId)
-
-                if (newEndTime != null) {
-                    if (!newEndTime.isAfter(newStartTime)) {
-                        return@patch call.respondError(
-                            HttpStatusCode.UnprocessableEntity, "INVALID_TIME_RANGE", "Время окончания должно быть строго позже времени начала"
-                        )
-                    }
-
-                    if (settings.minDurationEnabled) {
-                        val minSec = DurationConverter.toSeconds(settings.minDurationValue, settings.minDurationUnit)
-                        val actualSec = Duration.between(newStartTime, newEndTime).seconds
-                        if (actualSec < minSec) {
-                            return@patch call.respondError(
-                                HttpStatusCode.UnprocessableEntity, "DURATION_TOO_SHORT", "Длительность менее минимального порога ($minSec сек)"
-                            )
-                        }
-                    }
-                }
-
-                val historyEntry = RecordHistoryEntry(
-                    id = VersionId(UUID.randomUUID()),
-                    recordId = existing.id,
-                    categoryId = existing.categoryId,
-                    startTime = existing.startTime,
-                    endTime = existing.endTime,
-                    description = existing.description,
-                    modifiedAt = Instant.now()
-                )
-                recordHistoryRepository.saveHistoryEntry(historyEntry)
-
-                val updated = existing.copy(
+                val result = updateTimeRecordUseCase(
+                    recordId = recordId,
+                    requestUserId = authUser.userId,
+                    isAdmin = authUser.role == UserRole.ADMIN,
                     categoryId = newCategoryId,
                     startTime = newStartTime,
                     endTime = newEndTime,
-                    description = req.description ?: existing.description
+                    description = req.description
                 )
-                timeRecordRepository.saveRecord(updated)
-                call.respond(HttpStatusCode.OK, updated.toDto())
+
+                result.fold(
+                    onSuccess = { call.respond(HttpStatusCode.OK, it.toDto()) },
+                    onFailure = { error ->
+                        when (error) {
+                            is NoSuchElementException -> {
+                                if (error.message?.contains("Category") == true) {
+                                    call.respondError(HttpStatusCode.NotFound, "CATEGORY_NOT_FOUND", "Указанная категория не найдена")
+                                } else {
+                                    call.respondError(HttpStatusCode.NotFound, "RECORD_NOT_FOUND", "Запись '$recIdStr' не найдена")
+                                }
+                            }
+                            is IllegalAccessException -> call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", "Доступ к чужой записи запрещен")
+                            is IllegalArgumentException -> call.respondError(HttpStatusCode.UnprocessableEntity, "INVALID_TIME_RANGE", "Время окончания должно быть строго позже времени начала")
+                            is IllegalStateException -> call.respondError(HttpStatusCode.UnprocessableEntity, "DURATION_TOO_SHORT", error.message ?: "Длительность менее минимального порога")
+                            else -> call.respondError(HttpStatusCode.InternalServerError, "INTERNAL_ERROR", error.message ?: "Внутренняя ошибка")
+                        }
+                    }
+                )
             }
 
             delete {
@@ -355,17 +294,22 @@ fun Route.recordRoutes(
                     return@delete call.respondError(HttpStatusCode.BadRequest, "BAD_REQUEST", "Некорректный UUID записи")
                 }
 
-                val existing = timeRecordRepository.getRecordById(recordId)
-                if (existing == null) {
-                    return@delete call.respondError(HttpStatusCode.NotFound, "RECORD_NOT_FOUND", "Запись '$recIdStr' не найдена")
-                }
+                val result = deleteRecordUseCase(
+                    recordId = recordId,
+                    requestUserId = authUser.userId,
+                    isAdmin = authUser.role == UserRole.ADMIN
+                )
 
-                if (existing.userId != authUser.userId && authUser.role != UserRole.ADMIN) {
-                    return@delete call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", "Доступ к чужой записи запрещен")
-                }
-
-                timeRecordRepository.deleteRecord(recordId)
-                call.respond(HttpStatusCode.NoContent, Unit)
+                result.fold(
+                    onSuccess = { call.respond(HttpStatusCode.NoContent, Unit) },
+                    onFailure = { error ->
+                        when (error) {
+                            is NoSuchElementException -> call.respondError(HttpStatusCode.NotFound, "RECORD_NOT_FOUND", "Запись '$recIdStr' не найдена")
+                            is IllegalAccessException -> call.respondError(HttpStatusCode.Forbidden, "FORBIDDEN", "Доступ к чужой записи запрещен")
+                            else -> call.respondError(HttpStatusCode.InternalServerError, "INTERNAL_ERROR", error.message ?: "Внутренняя ошибка")
+                        }
+                    }
+                )
             }
         }
     }

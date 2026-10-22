@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.ppo.domain.repository.*
+import com.ppo.domain.usecase.*
 import com.ppo.web.data.db.DatabaseFactory
 import com.ppo.web.data.repository.*
 import com.ppo.web.routes.*
@@ -73,7 +74,15 @@ fun Application.module(
     val timeRecordRepository: ITimeRecordRepository = PostgresTimeRecordRepository(ds)
     val recordHistoryRepository: IRecordHistoryRepository = PostgresRecordHistoryRepository(ds)
 
-    val autoStopWorker = AutoStopWorker(timeRecordRepository, userSettingsRepository, recordHistoryRepository)
+    val createTimeRecordUseCase = CreateTimeRecordUseCase(timeRecordRepository, categoryRepository, userSettingsRepository)
+    val updateTimeRecordUseCase = UpdateTimeRecordUseCase(timeRecordRepository, categoryRepository, userSettingsRepository, recordHistoryRepository)
+    val deleteRecordUseCase = DeleteRecordUseCase(timeRecordRepository)
+    val autoStopExpiredRecordsUseCase = AutoStopExpiredRecordsUseCase(timeRecordRepository, userSettingsRepository, recordHistoryRepository)
+    val getRecordHistoryUseCase = GetRecordHistoryUseCase(timeRecordRepository, recordHistoryRepository)
+    val rollbackRecordHistoryUseCase = RollbackRecordHistoryUseCase(timeRecordRepository, recordHistoryRepository)
+    val manageUserSettingsUseCase = ManageUserSettingsUseCase(userSettingsRepository)
+
+    val autoStopWorker = AutoStopWorker(autoStopExpiredRecordsUseCase)
     val autoStopIntervalMs = System.getenv("AUTO_STOP_INTERVAL_MS")?.toLongOrNull() ?: (10 * 60 * 1000L)
     autoStopWorker.start(this, autoStopIntervalMs)
 
@@ -82,9 +91,18 @@ fun Application.module(
     routing {
         swaggerRoutes(spec)
         authRoutes(userRepository, userSettingsRepository)
-        userRoutes(userRepository, userSettingsRepository)
+        userRoutes(userRepository, userSettingsRepository, manageUserSettingsUseCase)
         categoryRoutes(categoryRepository)
-        recordRoutes(timeRecordRepository, categoryRepository, userSettingsRepository, recordHistoryRepository, autoStopWorker)
-        historyRoutes(timeRecordRepository, recordHistoryRepository)
+        recordRoutes(
+            timeRecordRepository = timeRecordRepository,
+            categoryRepository = categoryRepository,
+            userSettingsRepository = userSettingsRepository,
+            recordHistoryRepository = recordHistoryRepository,
+            createTimeRecordUseCase = createTimeRecordUseCase,
+            updateTimeRecordUseCase = updateTimeRecordUseCase,
+            deleteRecordUseCase = deleteRecordUseCase,
+            autoStopWorker = autoStopWorker
+        )
+        historyRoutes(getRecordHistoryUseCase, rollbackRecordHistoryUseCase)
     }
 }
