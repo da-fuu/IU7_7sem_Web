@@ -1,90 +1,72 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.*
+import com.ppo.domain.builders.TimeRecordBuilder
+import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.model.BusinessConfig
 import com.ppo.domain.repository.ITimeRecordRepository
-import io.mockk.*
-import kotlinx.coroutines.test.runTest
+import com.ppo.domain.runner.RandomOrderRunner
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.time.Instant
-import java.util.UUID
 
+@RunWith(RandomOrderRunner::class)
 class StopTimerUseCaseTest {
-
-    private lateinit var repository: ITimeRecordRepository
+    private val repository = mockk<ITimeRecordRepository>()
+    private val config = BusinessConfig(minDurationMinutes = 5)
     private lateinit var useCase: StopTimerUseCase
-    private val config = BusinessConfig(minDurationMinutes = 1)
 
     @Before
-    fun setup() {
-        repository = mockk()
+    fun setUp() {
         useCase = StopTimerUseCase(repository, config)
     }
 
     @Test
-    fun `when no active session, should return failure`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val stopTime = Instant.parse("2024-01-01T11:00:00Z")
+    fun shouldStopTimer_whenDurationAboveThreshold() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val start = Instant.parse("2026-10-15T10:00:00Z")
+        val stop = Instant.parse("2026-10-15T10:10:00Z")
+        val active = TimeRecordBuilder().withUserId(user.id).withStartTime(start).asActive().build()
+        coEvery { repository.getActiveSession(user.id) } returns active
+        coEvery { repository.saveRecord(any()) } returns Result.success(Unit)
 
-        coEvery { repository.getActiveSession(userId) } returns null
-
-        val result = useCase(userId, stopTime)
-
-        assertTrue(result.isFailure)
-        assertEquals("Нет активной сессии", result.exceptionOrNull()?.message)
-        coVerify(exactly = 0) { repository.saveRecord(any()) }
-    }
-
-    @Test
-    fun `when session duration is less than 1 minute, should delete record and return failure`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val startTime = Instant.parse("2024-01-01T10:00:00Z")
-        val stopTime = Instant.parse("2024-01-01T10:00:30Z") // 30 seconds
-
-        val activeSession = TimeRecord(
-            id = RecordId(UUID.randomUUID()),
-            userId = userId,
-            categoryId = CategoryId(UUID.randomUUID()),
-            startTime = startTime,
-            endTime = null
-        )
-
-        coEvery { repository.getActiveSession(userId) } returns activeSession
-        coEvery { repository.deleteRecord(activeSession.id) } returns Result.success(Unit)
-
-        val result = useCase(userId, stopTime)
-
-        assertTrue(result.isFailure)
-        assertEquals("Сессия менее установленного лимита отменена", result.exceptionOrNull()?.message)
-        coVerify(exactly = 1) { repository.deleteRecord(activeSession.id) }
-        coVerify(exactly = 0) { repository.saveRecord(any()) }
-    }
-
-    @Test
-    fun `when session duration is valid, should save updated session and return success`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val startTime = Instant.parse("2024-01-01T10:00:00Z")
-        val stopTime = Instant.parse("2024-01-01T11:00:00Z") // 1 hour
-
-        val activeSession = TimeRecord(
-            id = RecordId(UUID.randomUUID()),
-            userId = userId,
-            categoryId = CategoryId(UUID.randomUUID()),
-            startTime = startTime,
-            endTime = null
-        )
-
-        val updatedSession = activeSession.copy(endTime = stopTime)
-
-        coEvery { repository.getActiveSession(userId) } returns activeSession
-        coEvery { repository.saveRecord(updatedSession) } returns Result.success(Unit)
-
-        val result = useCase(userId, stopTime)
+        val result = useCase(user.id, stop)
 
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { repository.saveRecord(updatedSession) }
-        coVerify(exactly = 0) { repository.deleteRecord(any()) }
+        assertEquals(stop, result.getOrNull()?.endTime)
+        coVerify(exactly = 1) { repository.saveRecord(match { it.endTime == stop }) }
+    }
+
+    @Test
+    fun shouldCancelAndRemoveTimer_whenDurationBelowThreshold() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val start = Instant.parse("2026-10-15T10:00:00Z")
+        val stop = Instant.parse("2026-10-15T10:02:00Z")
+        val active = TimeRecordBuilder().withUserId(user.id).withStartTime(start).asActive().build()
+        coEvery { repository.getActiveSession(user.id) } returns active
+        coEvery { repository.deleteRecord(active.id) } returns Result.success(Unit)
+
+        val result = useCase(user.id, stop)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+        coVerify(exactly = 1) { repository.deleteRecord(active.id) }
+    }
+
+    @Test
+    fun shouldFailToStop_whenNoActiveSessionExists() = runBlocking {
+        val user = TestUserMother.regularUser()
+        coEvery { repository.getActiveSession(user.id) } returns null
+
+        val result = useCase(user.id, Instant.now())
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
     }
 }

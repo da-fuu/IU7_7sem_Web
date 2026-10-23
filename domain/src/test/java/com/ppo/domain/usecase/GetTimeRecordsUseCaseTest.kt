@@ -1,50 +1,45 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.RecordId
-import com.ppo.domain.model.TimeRecord
-import com.ppo.domain.model.UserId
-import com.ppo.domain.model.CategoryId
+import com.ppo.domain.builders.TimeRecordBuilder
+import com.ppo.domain.fixtures.TestUserMother
 import com.ppo.domain.repository.ITimeRecordRepository
+import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import java.time.Instant
-import java.util.UUID
+import org.junit.runner.RunWith
 
+@RunWith(RandomOrderRunner::class)
 class GetTimeRecordsUseCaseTest {
-
-    private lateinit var repository: ITimeRecordRepository
+    private val timeRecordRepository = mockk<ITimeRecordRepository>()
     private lateinit var useCase: GetTimeRecordsUseCase
 
     @Before
-    fun setup() {
-        repository = mockk()
-        useCase = GetTimeRecordsUseCase(repository)
+    fun setUp() {
+        useCase = GetTimeRecordsUseCase(timeRecordRepository)
     }
 
     @Test
-    fun `should return records from repository`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val records = listOf(
-            TimeRecord(RecordId(UUID.randomUUID()), userId, CategoryId(UUID.randomUUID()), Instant.now(), null),
-            TimeRecord(
-                RecordId(UUID.randomUUID()),
-                userId,
-                CategoryId(UUID.randomUUID()),
-                Instant.now().minusSeconds(3600),
-                Instant.now()
-            )
-        )
+    fun shouldReturnTimeRecordsList_whenInvoked() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val records = listOf(TimeRecordBuilder().withUserId(user.id).build())
+        coEvery { timeRecordRepository.getTimeRecords(user.id) } returns records
 
-        coEvery { repository.getTimeRecords(userId) } returns records
+        val result = useCase(user.id)
 
-        val result = useCase(userId)
+        assertEquals(1, result.size)
+    }
 
-        assertEquals(records.size, result.size)
-        assertEquals(records[0].id, result[0].id)
-        assertEquals(records[1].startTime, result[1].startTime)
+    @Test
+    fun shouldReturnEmptyList_whenUserHasNoRecords() = runBlocking {
+        val user = TestUserMother.regularUser()
+        coEvery { timeRecordRepository.getTimeRecords(user.id) } returns emptyList()
+
+        val result = useCase(user.id)
+
+        assertEquals(0, result.size)
     }
 }

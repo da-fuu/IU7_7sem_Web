@@ -1,4 +1,5 @@
 [versions]
+allure = "2.27.0"
 objectbox = "5.4.2"
 agp = "9.2.1"
 coreKtx = "1.18.0"
@@ -82,7 +83,10 @@ ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref =
 ktor-client-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 ktor-client-content-negotiation = { group = "io.ktor", name = "ktor-client-content-negotiation", version.ref = "ktor" }
 
+allure-junit4 = { group = "io.qameta.allure", name = "allure-junit4", version.ref = "allure" }
+
 [plugins]
+allure = { id = "io.qameta.allure", version = "2.12.0" }
 objectbox = { id = "io.objectbox", version.ref = "objectbox" }
 
 android-application = { id = "com.android.application", version.ref = "agp" }

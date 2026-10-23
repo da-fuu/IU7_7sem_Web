@@ -1,61 +1,65 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.*
+import com.ppo.domain.builders.TimeRecordBuilder
+import com.ppo.domain.model.RecordId
 import com.ppo.domain.repository.ITimeRecordRepository
-import io.mockk.*
+import com.ppo.domain.runner.RandomOrderRunner
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
-import java.time.Instant
+import org.junit.runner.RunWith
 import java.util.UUID
 
+@RunWith(RandomOrderRunner::class)
 class UpdateRecordDescriptionUseCaseTest {
-    private val repo = mockk<ITimeRecordRepository>()
-    private val useCase = UpdateRecordDescriptionUseCase(repo)
+    private val timeRecordRepository = mockk<ITimeRecordRepository>()
+    private lateinit var useCase: UpdateRecordDescriptionUseCase
 
-    @Test
-    fun `should save old description to history and update record`() = runBlocking {
-        val recordId = RecordId(UUID.randomUUID())
-        val oldRecord = TimeRecord(
-            id = recordId,
-            userId = UserId(UUID.randomUUID()),
-            categoryId = CategoryId(UUID.randomUUID()),
-            startTime = Instant.now(),
-            description = "Old"
-        )
-        val newDesc = "New"
-
-        coEvery { repo.getRecordById(recordId) } returns oldRecord
-        coEvery { repo.addDescriptionVersion(any()) } returns Result.success(Unit)
-        coEvery { repo.saveRecord(any()) } returns Result.success(Unit)
-
-        val result = useCase(recordId, newDesc)
-
-        assertTrue(result.isSuccess)
-        coVerify {
-            repo.addDescriptionVersion(match { it.description == "Old" && it.recordId == recordId })
-            repo.saveRecord(match { it.description == "New" && it.id == recordId })
-        }
+    @Before
+    fun setUp() {
+        useCase = UpdateRecordDescriptionUseCase(timeRecordRepository)
     }
 
     @Test
-    fun `should return success if description is same`() = runBlocking {
-        val recordId = RecordId(UUID.randomUUID())
-        val record = TimeRecord(
-            id = recordId,
-            userId = UserId(UUID.randomUUID()),
-            categoryId = CategoryId(UUID.randomUUID()),
-            startTime = Instant.now(),
-            description = "Same"
-        )
+    fun shouldUpdateDescriptionAndSaveVersion_whenDescriptionChanged() = runBlocking {
+        val original = TimeRecordBuilder().withDescription("Initial description").build()
+        coEvery { timeRecordRepository.getRecordById(original.id) } returns original
+        coEvery { timeRecordRepository.addDescriptionVersion(any()) } returns Result.success(Unit)
+        coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)
 
-        coEvery { repo.getRecordById(recordId) } returns record
-
-        val result = useCase(recordId, "Same")
+        val result = useCase(original.id, "Updated description")
 
         assertTrue(result.isSuccess)
-        coVerify(exactly = 0) { repo.addDescriptionVersion(any()) }
-        coVerify(exactly = 0) { repo.saveRecord(any()) }
+        assertEquals("Updated description", result.getOrNull()?.description)
+        coVerify(exactly = 1) { timeRecordRepository.addDescriptionVersion(any()) }
+        coVerify(exactly = 1) { timeRecordRepository.saveRecord(match { it.description == "Updated description" }) }
+    }
+
+    @Test
+    fun shouldReturnUnchangedRecord_whenDescriptionIsIdentical() = runBlocking {
+        val original = TimeRecordBuilder().withDescription("Same description").build()
+        coEvery { timeRecordRepository.getRecordById(original.id) } returns original
+
+        val result = useCase(original.id, "Same description")
+
+        assertTrue(result.isSuccess)
+        assertEquals(original, result.getOrNull())
+        coVerify(exactly = 0) { timeRecordRepository.saveRecord(any()) }
+    }
+
+    @Test
+    fun shouldFailWithNoSuchElement_whenRecordNotFound() = runBlocking {
+        val missingId = RecordId(UUID.randomUUID())
+        coEvery { timeRecordRepository.getRecordById(missingId) } returns null
+
+        val result = useCase(missingId, "New text")
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is NoSuchElementException)
     }
 }

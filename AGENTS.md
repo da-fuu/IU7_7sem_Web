@@ -132,6 +132,11 @@ IU7_7sem_web/
 
 | Лабораторная | Команда | Назначение |
 | :--- | :--- | :--- |
+| **TestingLab#1** | `./gradlew :domain:test :web:data:test` | Запуск полного набора unit-тестов проекта (domain + web:data) |
+| **TestingLab#1** | `./gradlew jacocoRootReport` | Генерация объединенного отчета покрытия JaCoCo для всего проекта (`build/reports/jacoco/root/html`) |
+| **TestingLab#1** | `python3 scripts/coverage_report.py` | Сводный отчет покрытия кода JaCoCo (Lines & Branches) |
+| **TestingLab#1** | `./gradlew allureReport` | Генерация интерактивного HTML-отчета Allure (`build/reports/allure-report`) |
+| **TestingLab#1** | `./gradlew allureServe` | Локальный просмотр Allure-отчета в веб-сервере |
 | **WebLab#2** | `docker run --rm -v $(pwd):/spec -w /spec redocly/cli lint web/api/openapi.yaml` | Индустриальный линтинг схемы (Redocly CLI) |
 | **WebLab#2** | `openapi-spec-validator web/api/openapi.yaml` | Валидация спецификации (OpenAPI Spec Validator) |
 | **WebLab#2** | `python3 web/api/scripts/mock_server.py 4010` | Запуск Mock-сервера по контракту |

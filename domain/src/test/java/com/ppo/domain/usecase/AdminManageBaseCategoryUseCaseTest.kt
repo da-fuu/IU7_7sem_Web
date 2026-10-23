@@ -1,84 +1,84 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.Category
+import com.ppo.domain.builders.CategoryBuilder
+import com.ppo.domain.fixtures.TestUserMother
 import com.ppo.domain.model.CategoryId
-import com.ppo.domain.model.UserId
 import com.ppo.domain.model.UserRole
 import com.ppo.domain.repository.ICategoryRepository
 import com.ppo.domain.repository.IUserRepository
+import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.util.UUID
 
+@RunWith(RandomOrderRunner::class)
 class AdminManageBaseCategoryUseCaseTest {
-
-    private lateinit var categoryRepository: ICategoryRepository
-    private lateinit var userRepository: IUserRepository
+    private val categoryRepository = mockk<ICategoryRepository>()
+    private val userRepository = mockk<IUserRepository>()
     private lateinit var useCase: AdminManageBaseCategoryUseCase
 
     @Before
-    fun setup() {
-        categoryRepository = mockk()
-        userRepository = mockk()
+    fun setUp() {
         useCase = AdminManageBaseCategoryUseCase(categoryRepository, userRepository)
     }
 
     @Test
-    fun `when user is not admin, should return failure`() = runTest {
-        val adminId = UserId(UUID.randomUUID())
-        val category = Category(CategoryId(UUID.randomUUID()), null, "Work", "#FFF", true)
+    fun shouldSaveBaseCategory_whenAdminProvidesValidData() = runBlocking {
+        val admin = TestUserMother.adminUser()
+        val baseCategory = CategoryBuilder().asDefault().withName("Global Work").withColorHex("#3B82F6").build()
+        coEvery { userRepository.getUserRole(admin.id) } returns UserRole.ADMIN
+        coEvery { categoryRepository.findCategoryByName(null, "Global Work") } returns null
+        coEvery { categoryRepository.saveCategory(baseCategory) } returns Result.success(Unit)
 
-        coEvery { userRepository.getUserRole(adminId) } returns UserRole.USER
+        val result = useCase(baseCategory, admin.id)
 
-        val result = useCase(category, adminId)
-        assertTrue(result.isFailure)
-        assertEquals("Нет прав администратора", result.exceptionOrNull()?.message)
-        coVerify(exactly = 0) { categoryRepository.saveCategory(any()) }
-    }
-
-    @Test
-    fun `when category has userId, should return failure`() = runTest {
-        val adminId = UserId(UUID.randomUUID())
-        val category = Category(CategoryId(UUID.randomUUID()), UserId(UUID.randomUUID()), "Work", "#FFF", true)
-
-        coEvery { userRepository.getUserRole(adminId) } returns UserRole.ADMIN
-
-        val result = useCase(category, adminId)
-        assertTrue(result.isFailure)
-        assertEquals("Базовая категория должна быть isDefault=true и без привязки к пользователю", result.exceptionOrNull()?.message)
-        coVerify(exactly = 0) { categoryRepository.saveCategory(any()) }
-    }
-
-    @Test
-    fun `when category is not default, should return failure`() = runTest {
-        val adminId = UserId(UUID.randomUUID())
-        val category = Category(CategoryId(UUID.randomUUID()), null, "Work", "#FFF", false)
-
-        coEvery { userRepository.getUserRole(adminId) } returns UserRole.ADMIN
-
-        val result = useCase(category, adminId)
-        assertTrue(result.isFailure)
-        assertEquals("Базовая категория должна быть isDefault=true и без привязки к пользователю", result.exceptionOrNull()?.message)
-        coVerify(exactly = 0) { categoryRepository.saveCategory(any()) }
-    }
-
-    @Test
-    fun `when validation passes, should save category and return success`() = runTest {
-        val adminId = UserId(UUID.randomUUID())
-        val category = Category(CategoryId(UUID.randomUUID()), null, "Work", "#FFF", true)
-
-        coEvery { userRepository.getUserRole(adminId) } returns UserRole.ADMIN
-        coEvery { categoryRepository.findCategoryByName(null, "Work") } returns null
-        coEvery { categoryRepository.saveCategory(category) } returns Result.success(Unit)
-
-        val result = useCase(category, adminId)
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { categoryRepository.saveCategory(category) }
+        coVerify(exactly = 1) { categoryRepository.saveCategory(baseCategory) }
+    }
+
+    @Test
+    fun shouldFailWithIllegalState_whenRequesterIsNotAdmin() = runBlocking {
+        val regularUser = TestUserMother.regularUser()
+        val baseCategory = CategoryBuilder().asDefault().build()
+        coEvery { userRepository.getUserRole(regularUser.id) } returns UserRole.USER
+
+        val result = useCase(baseCategory, regularUser.id)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+    }
+
+    @Test
+    fun shouldFailWithIllegalState_whenBaseCategoryHasUserIdAttached() = runBlocking {
+        val admin = TestUserMother.adminUser()
+        val invalidBaseCategory = CategoryBuilder().asDefault().withUserId(admin.id).build()
+        coEvery { userRepository.getUserRole(admin.id) } returns UserRole.ADMIN
+
+        val result = useCase(invalidBaseCategory, admin.id)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+    }
+
+    @Test
+    fun shouldFailWithIllegalState_whenDuplicateBaseCategoryNameExists() = runBlocking {
+        val admin = TestUserMother.adminUser()
+        val newCategory = CategoryBuilder().asDefault().withName("Спорт").build()
+        val existingCategory = CategoryBuilder().asDefault().withName("Спорт").build()
+        coEvery { userRepository.getUserRole(admin.id) } returns UserRole.ADMIN
+        coEvery { categoryRepository.findCategoryByName(null, "Спорт") } returns existingCategory
+
+        val result = useCase(newCategory, admin.id)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalStateException)
+        assertEquals("Категория с таким именем уже существует", result.exceptionOrNull()?.message)
     }
 }

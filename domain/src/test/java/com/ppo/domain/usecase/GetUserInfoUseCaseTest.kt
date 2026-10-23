@@ -1,39 +1,45 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.User
+import com.ppo.domain.builders.UserBuilder
 import com.ppo.domain.model.UserId
-import com.ppo.domain.model.UserRole
 import com.ppo.domain.repository.IUserRepository
+import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.util.UUID
 
+@RunWith(RandomOrderRunner::class)
 class GetUserInfoUseCaseTest {
-
     private val userRepository = mockk<IUserRepository>()
-    private val useCase = GetUserInfoUseCase(userRepository)
+    private lateinit var useCase: GetUserInfoUseCase
+
+    @Before
+    fun setUp() {
+        useCase = GetUserInfoUseCase(userRepository)
+    }
 
     @Test
-    fun `should return user when found`() = runBlocking {
-        val userId = UserId(UUID.randomUUID())
-        val user = User(userId, "test", "Test User", "hash", UserRole.USER)
-        coEvery { userRepository.getUserById(userId) } returns user
+    fun shouldReturnUserInfo_whenUserExists() = runBlocking {
+        val user = UserBuilder().build()
+        coEvery { userRepository.getUserById(user.id) } returns user
 
-        val result = useCase(userId)
+        val result = useCase(user.id)
 
         assertEquals(user, result)
     }
 
     @Test
-    fun `should return null when user not found`() = runBlocking {
-        val userId = UserId(UUID.randomUUID())
-        coEvery { userRepository.getUserById(userId) } returns null
+    fun shouldReturnNull_whenUserNotFound() = runBlocking {
+        val missingId = UserId(UUID.randomUUID())
+        coEvery { userRepository.getUserById(missingId) } returns null
 
-        val result = useCase(userId)
+        val result = useCase(missingId)
 
         assertNull(result)
     }

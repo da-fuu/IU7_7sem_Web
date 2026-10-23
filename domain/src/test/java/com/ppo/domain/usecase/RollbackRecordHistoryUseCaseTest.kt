@@ -1,77 +1,100 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.*
+import com.ppo.domain.builders.TimeRecordBuilder
+import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.model.RecordHistoryEntry
+import com.ppo.domain.model.RecordId
+import com.ppo.domain.model.VersionId
 import com.ppo.domain.repository.IRecordHistoryRepository
 import com.ppo.domain.repository.ITimeRecordRepository
+import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.time.Instant
 import java.util.UUID
 
+@RunWith(RandomOrderRunner::class)
 class RollbackRecordHistoryUseCaseTest {
-    private lateinit var timeRecordRepository: ITimeRecordRepository
-    private lateinit var recordHistoryRepository: IRecordHistoryRepository
+    private val timeRecordRepository = mockk<ITimeRecordRepository>()
+    private val recordHistoryRepository = mockk<IRecordHistoryRepository>()
     private lateinit var useCase: RollbackRecordHistoryUseCase
 
     @Before
-    fun setup() {
-        timeRecordRepository = mockk()
-        recordHistoryRepository = mockk()
+    fun setUp() {
         useCase = RollbackRecordHistoryUseCase(timeRecordRepository, recordHistoryRepository)
     }
 
     @Test
-    fun `should create audit snapshot and rollback all record fields to version values`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val catOld = CategoryId(UUID.randomUUID())
-        val catCurrent = CategoryId(UUID.randomUUID())
-        val recordId = RecordId(UUID.randomUUID())
-        val versionId = VersionId(UUID.randomUUID())
-
-        val currentRecord = TimeRecord(
-            id = recordId,
-            userId = userId,
-            categoryId = catCurrent,
-            startTime = Instant.parse("2026-10-15T12:00:00Z"),
-            endTime = Instant.parse("2026-10-15T13:00:00Z"),
-            description = "Current Description"
+    fun shouldRollbackToSnapshotAndCreateNewAuditEntry_whenOwnerRequestsRollback() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val record = TimeRecordBuilder().withUserId(user.id).withDescription("v2-current").build()
+        val snapshot = RecordHistoryEntry(
+            id = VersionId(UUID.randomUUID()),
+            recordId = record.id,
+            categoryId = record.categoryId,
+            startTime = record.startTime,
+            endTime = record.endTime,
+            description = "v1-original",
+            modifiedAt = Instant.now()
         )
-
-        val targetVersion = RecordHistoryEntry(
-            id = versionId,
-            recordId = recordId,
-            categoryId = catOld,
-            startTime = Instant.parse("2026-10-15T08:00:00Z"),
-            endTime = Instant.parse("2026-10-15T09:00:00Z"),
-            description = "Original Description",
-            modifiedAt = Instant.parse("2026-10-15T10:00:00Z")
-        )
-
-        coEvery { timeRecordRepository.getRecordById(recordId) } returns currentRecord
-        coEvery { recordHistoryRepository.getHistoryEntry(versionId) } returns targetVersion
+        coEvery { timeRecordRepository.getRecordById(record.id) } returns record
+        coEvery { recordHistoryRepository.getHistoryEntry(snapshot.id) } returns snapshot
         coEvery { recordHistoryRepository.saveHistoryEntry(any()) } returns Result.success(Unit)
         coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)
 
-        val result = useCase(recordId, versionId, userId)
-        assertTrue(result.isSuccess)
-        val rolledBack = result.getOrNull()
-        assertEquals(catOld, rolledBack?.categoryId)
-        assertEquals(targetVersion.startTime, rolledBack?.startTime)
-        assertEquals(targetVersion.endTime, rolledBack?.endTime)
-        assertEquals("Original Description", rolledBack?.description)
+        val result = useCase(record.id, snapshot.id, user.id, false)
 
+        assertTrue(result.isSuccess)
+        assertEquals("v1-original", result.getOrNull()?.description)
         coVerify(exactly = 1) {
-            recordHistoryRepository.saveHistoryEntry(match {
-                it.recordId == recordId &&
-                it.categoryId == catCurrent &&
-                it.description == "Current Description"
-            })
+            recordHistoryRepository.saveHistoryEntry(match { it.description == "v2-current" })
         }
+        coVerify(exactly = 1) {
+            timeRecordRepository.saveRecord(match { it.description == "v1-original" })
+        }
+    }
+
+    @Test
+    fun shouldFailWithIllegalArgument_whenVersionBelongsToAnotherRecord() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val record = TimeRecordBuilder().withUserId(user.id).build()
+        val otherRecordId = RecordId(UUID.randomUUID())
+        val foreignSnapshot = RecordHistoryEntry(
+            id = VersionId(UUID.randomUUID()),
+            recordId = otherRecordId,
+            categoryId = record.categoryId,
+            startTime = record.startTime,
+            endTime = record.endTime,
+            description = "foreign",
+            modifiedAt = Instant.now()
+        )
+        coEvery { timeRecordRepository.getRecordById(record.id) } returns record
+        coEvery { recordHistoryRepository.getHistoryEntry(foreignSnapshot.id) } returns foreignSnapshot
+
+        val result = useCase(record.id, foreignSnapshot.id, user.id, false)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalArgumentException)
+    }
+
+    @Test
+    fun shouldFailWithNoSuchElement_whenVersionNotFound() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val record = TimeRecordBuilder().withUserId(user.id).build()
+        val missingVersionId = VersionId(UUID.randomUUID())
+        coEvery { timeRecordRepository.getRecordById(record.id) } returns record
+        coEvery { recordHistoryRepository.getHistoryEntry(missingVersionId) } returns null
+
+        val result = useCase(record.id, missingVersionId, user.id, false)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is NoSuchElementException)
     }
 }

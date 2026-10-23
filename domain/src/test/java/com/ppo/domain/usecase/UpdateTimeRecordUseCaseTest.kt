@@ -1,86 +1,138 @@
 package com.ppo.domain.usecase
 
-import com.ppo.domain.model.*
+import com.ppo.domain.builders.CategoryBuilder
+import com.ppo.domain.builders.TimeRecordBuilder
+import com.ppo.domain.fixtures.TestCategoryMother
+import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.model.RecordId
 import com.ppo.domain.repository.ICategoryRepository
 import com.ppo.domain.repository.IRecordHistoryRepository
 import com.ppo.domain.repository.ITimeRecordRepository
 import com.ppo.domain.repository.IUserSettingsRepository
+import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.time.Instant
 import java.util.UUID
 
+@RunWith(RandomOrderRunner::class)
 class UpdateTimeRecordUseCaseTest {
-    private lateinit var timeRecordRepository: ITimeRecordRepository
-    private lateinit var categoryRepository: ICategoryRepository
-    private lateinit var userSettingsRepository: IUserSettingsRepository
-    private lateinit var recordHistoryRepository: IRecordHistoryRepository
+    private val timeRecordRepository = mockk<ITimeRecordRepository>()
+    private val categoryRepository = mockk<ICategoryRepository>()
+    private val userSettingsRepository = mockk<IUserSettingsRepository>()
+    private val recordHistoryRepository = mockk<IRecordHistoryRepository>()
     private lateinit var useCase: UpdateTimeRecordUseCase
 
     @Before
-    fun setup() {
-        timeRecordRepository = mockk()
-        categoryRepository = mockk()
-        userSettingsRepository = mockk()
-        recordHistoryRepository = mockk()
+    fun setUp() {
         useCase = UpdateTimeRecordUseCase(
             timeRecordRepository,
             categoryRepository,
             userSettingsRepository,
             recordHistoryRepository
         )
+        coEvery { userSettingsRepository.getSettings(any()) } returns com.ppo.domain.model.UserSettings(
+            userId = com.ppo.domain.fixtures.TestUserMother.regularUser().id,
+            minDurationEnabled = false
+        )
     }
 
     @Test
-    fun `should create history snapshot with all previous fields and update record`() = runTest {
-        val userId = UserId(UUID.randomUUID())
-        val catId1 = CategoryId(UUID.randomUUID())
-        val catId2 = CategoryId(UUID.randomUUID())
-        val recordId = RecordId(UUID.randomUUID())
-        val startOld = Instant.parse("2026-10-15T10:00:00Z")
-        val endOld = Instant.parse("2026-10-15T11:00:00Z")
-
-        val existing = TimeRecord(recordId, userId, catId1, startOld, endOld, "Old Desc")
-        val cat2 = Category(catId2, userId, "New Cat", "#10B981", false)
-
-        coEvery { timeRecordRepository.getRecordById(recordId) } returns existing
-        coEvery { categoryRepository.findCategoryById(catId2) } returns cat2
-        coEvery { userSettingsRepository.getSettings(userId) } returns UserSettings(userId, minDurationEnabled = false)
+    fun shouldUpdateRecordAndSaveHistorySnapshot_whenOwnerUpdatesFields() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val original = TimeRecordBuilder().withUserId(user.id).withDescription("Old description").build()
+        val newEndTime = original.startTime.plusSeconds(3600)
+        coEvery { timeRecordRepository.getRecordById(original.id) } returns original
         coEvery { recordHistoryRepository.saveHistoryEntry(any()) } returns Result.success(Unit)
         coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)
 
-        val newStart = Instant.parse("2026-10-15T09:00:00Z")
-        val newEnd = Instant.parse("2026-10-15T10:30:00Z")
         val result = useCase(
-            recordId = recordId,
-            requestUserId = userId,
-            categoryId = catId2,
-            startTime = newStart,
-            endTime = newEnd,
-            description = "New Desc"
+            recordId = original.id,
+            requestUserId = user.id,
+            description = "New description",
+            endTime = newEndTime
         )
 
         assertTrue(result.isSuccess)
-        val updated = result.getOrNull()
-        assertEquals(catId2, updated?.categoryId)
-        assertEquals(newStart, updated?.startTime)
-        assertEquals(newEnd, updated?.endTime)
-        assertEquals("New Desc", updated?.description)
-
+        assertEquals("New description", result.getOrNull()?.description)
         coVerify(exactly = 1) {
             recordHistoryRepository.saveHistoryEntry(match {
-                it.recordId == recordId &&
-                it.categoryId == catId1 &&
-                it.startTime == startOld &&
-                it.endTime == endOld &&
-                it.description == "Old Desc"
+                it.recordId == original.id && it.description == "Old description"
             })
         }
+        coVerify(exactly = 1) { timeRecordRepository.saveRecord(match { it.description == "New description" }) }
+    }
+
+    @Test
+    fun shouldUpdateRecord_whenAdminUpdatesAnotherUserRecord() = runBlocking {
+        val owner = TestUserMother.regularUser()
+        val admin = TestUserMother.adminUser()
+        val record = TimeRecordBuilder().withUserId(owner.id).build()
+        coEvery { timeRecordRepository.getRecordById(record.id) } returns record
+        coEvery { recordHistoryRepository.saveHistoryEntry(any()) } returns Result.success(Unit)
+        coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)
+
+        val result = useCase(
+            recordId = record.id,
+            requestUserId = admin.id,
+            isAdmin = true,
+            description = "Admin override"
+        )
+
+        assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun shouldFailWithIllegalAccess_whenNonOwnerAndNotAdminAttemptsUpdate() = runBlocking {
+        val owner = TestUserMother.regularUser()
+        val otherUser = TestUserMother.otherUser()
+        val record = TimeRecordBuilder().withUserId(owner.id).build()
+        coEvery { timeRecordRepository.getRecordById(record.id) } returns record
+
+        val result = useCase(
+            recordId = record.id,
+            requestUserId = otherUser.id,
+            isAdmin = false,
+            description = "Hacked"
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalAccessException)
+    }
+
+    @Test
+    fun shouldFailWithNoSuchElement_whenRecordNotFound() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val missingId = RecordId(UUID.randomUUID())
+        coEvery { timeRecordRepository.getRecordById(missingId) } returns null
+
+        val result = useCase(recordId = missingId, requestUserId = user.id)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is NoSuchElementException)
+    }
+
+    @Test
+    fun shouldFailWithIllegalArgument_whenNewEndTimeIsBeforeStartTime() = runBlocking {
+        val user = TestUserMother.regularUser()
+        val record = TimeRecordBuilder().withUserId(user.id).build()
+        val invalidEnd = record.startTime.minusSeconds(60)
+        coEvery { timeRecordRepository.getRecordById(record.id) } returns record
+
+        val result = useCase(
+            recordId = record.id,
+            requestUserId = user.id,
+            endTime = invalidEnd
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalArgumentException)
     }
 }

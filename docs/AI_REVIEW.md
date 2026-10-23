@@ -91,3 +91,69 @@
   3. *Отклонено*: Реализация бизнес-логики (авто-остановка, аудит истории, валидация по настройкам) внутри маршрутов `:web:backend` в обход `:domain`. Причина: нарушение Clean Architecture; вся логика инкапсулирована в Use Cases модуля `:domain`.
   4. *Отклонено*: Написание inline-комментариев в исходном коде Kotlin/Java/Python. Причина: жесткое правило проекта NO INLINE COMMENTS (самодокументируемый код).
 
+---
+
+## TestingLab#1 — Unit Testing & Coverage (Domain & Web Backend)
+
+- **Задача**: Разработать полную систему unit-тестов для компонентов бизнес-логики (`:domain`) и веб-бэкенда (`:web:backend`) проекта TimeTracker в строгом соответствии с требованиями ЛР1 и лекционными best practices. Обеспечить покрытие public-методов позитивными и негативными тестами, обработку исключений, применение паттернов Test Data Builder и Object Mother, разделение тестов на Лондонскую (Mockist) и Классическую (Детройтскую) школы со сравнительным анализом, запуск в случайном порядке, работу в оффлайн-режиме, автоматический расчет покрытия по строкам и ветвлениям (JaCoCo) из консоли и анализ процессов JVM при тестировании.
+- **Инструмент / Модель**: Antigravity Coding Agent (Gemini 3.8 Flash High).
+- **Результаты и артефакты**:
+  - План и реестр тестов: [test_plan_lab1.md](file:///home/dafuu/.gemini/antigravity/brain/ee71b6f1-368e-442a-93ef-70df36cb0652/test_plan_lab1.md)
+  - Итоговый аналитический отчет: [docs/TESTING_REPORT.md](TESTING_REPORT.md)
+  - Паттерны тестовых данных: `TestUserMother`, `TestUserSettingsMother`, `TestCategoryMother`, `TestTimeRecordMother` ([TestMothers.kt](../domain/src/test/java/com/ppo/domain/fixtures/TestMothers.kt)), `TimeRecordBuilder`, `UserSettingsBuilder`, `CategoryBuilder`, `UserBuilder` ([Builders.kt](../domain/src/test/java/com/ppo/domain/builders/Builders.kt)).
+  - Рандомизатор порядка выполнения тестов: `RandomOrderRunner` ([RandomOrderRunner.kt](../domain/src/test/java/com/ppo/domain/runner/RandomOrderRunner.kt) и [RandomOrderRunner.kt](../web/backend/src/test/kotlin/com/ppo/web/runner/RandomOrderRunner.kt)).
+  - Тестовые дублеры (Fakes) для Детройтской школы: [InMemoryRepositories.kt](../domain/src/test/java/com/ppo/domain/fakes/InMemoryRepositories.kt).
+  - Тестовые наборы бизнес-логики `:domain`: 21 тестовый класс, включая сравнительный `ComparisonApproachTest`.
+  - Тестовые наборы слоя REST API `:web:backend`: 9 тестовых классов (`SecurityUtilsTest`, `AutoStopWorkerTest`, `DtoMappersTest`, `DurationConverterTest`, `AuthApiTest`, `UserApiTest`, `CategoryApiTest`, `RecordApiTest`, `HistoryApiTest`, `SwaggerApiTest`, `ContractViolationDemonstrationTest`).
+  - Скрипт сводного отчета покрытия: [scripts/coverage_report.py](../scripts/coverage_report.py).
+- **Способ проверки**:
+  - Запуск всех юнит-тестов из консоли: `./gradlew :domain:test :web:backend:test` (100% тестов завершились успешно).
+  - Расчет тестового покрытия: `./gradlew :domain:jacocoTestReport :web:backend:jacocoTestReport && python3 scripts/coverage_report.py`.
+    - Покрытие `:domain`: **Строки (Lines): 86.7%** (384/443), **Ветвления (Branches): 68.2%** (135/198).
+    - Покрытие `:web:backend`: **Строки (Lines): 63.2%** (538/851), **Ветвления (Branches): 38.1%** (163/428).
+  - Проверка оффлайн-режима: тесты не требуют доступа в интернет и изолированы через MockK и in-memory хранилища.
+  - Проверка рандомизации: тесты запускаются со случайным перемешиванием методов (seed через свойство `test.random.seed`).
+- **Существенные принятые решения**:
+  1. *Принято*: Строгое соблюдение структуры Arrange-Act-Assert (AAA) с правилом **ровно 1 строка в секции Act** (один вызов тестируемого метода SUT) и разделением секций пустой строкой без inline-комментариев.
+  2. *Принято*: Применение принципа Command-Query Separation (CQS): для Query-методов проверяется возвращаемый результат без assert на возвраты stub; для Command-методов проверяются вызовы `coVerify` или изменение состояния хранилища.
+  3. *Принято*: Реализация выделенного класса `ComparisonApproachTest`, демонстрирующего контраст между Лондонской школой (проверка взаимодействий через `mockk`) и Классической Детройтской школой (проверка наблюдаемого состояния через `InMemoryTimeRecordRepository`).
+  4. *Принято*: Создание генераторов тестовых данных по паттернам Test Data Builder и Object Mother для обеспечения гибкости при тестировании граничных значений (BVA) и чистоты кода тестов.
+- **Существенные отклоненные решения**:
+  1. *Отклонено*: Тестирование приватных или защищенных методов. Причина: прямое требование задания и принципа Observable Behavior (тестируется только контракт публичного интерфейса).
+  2. *Отклонено*: Добавление комментариев `// Arrange`, `// Act`, `// Assert` в исходный код тестов. Причина: жесткое правило проекта NO INLINE COMMENTS (код самодокументируем благодаря говорящим именам методов и структуре).
+
+---
+
+## TestingLab#1 (Расширение) — Data Layer Testing & 100% BPMN Process Coverage
+
+- **Задача**: Реализовать полный набор unit-тестов в соответствии с заданием Лабораторной работы №1 для компонентов доступа к данным (`:web:data`) и бизнес-логики (`:domain`), обеспечить 100% покрытие бизнес-процессов BPMN со всеми альтернативными ветками и контурами ошибок (Error Loops), подключить автоматический расчет покрытия JaCoCo и генерацию отчета Allure 2.
+- **Инструмент / Модель**: Antigravity Coding Agent (Gemini 3.8 Flash High).
+- **Результаты и артефакты**:
+  - План и реестр тестов: [test_plan_data_and_bpmn.md](file:///home/dafuu/.gemini/antigravity/brain/ee71b6f1-368e-442a-93ef-70df36cb0652/test_plan_data_and_bpmn.md)
+  - Тестирование BPMN-процессов: 100% покрытие всех трех BPMN-диаграмм (`addtask.bpmn`, `withtimer.bpmn`, `addcategory.bpmn`) и их эксклюзивных шлюзов (Happy Path, Error Loops, RBAC) сосредоточено непосредственно в тестах Use Cases `:domain` и репозиториев `:web:data`.
+  - Тестовые наборы бизнес-логики `:domain` (73 теста, охватывающие все 16 Use Cases, валидации, сущности, граничные значения BVA, техники EP, переходы состояний и сравнение школ).
+  - Тестовые наборы слоя данных `:web:data` (36 тестов):
+    - `PostgresUserRepositoryTest.kt` (7 тестов)
+    - `PostgresUserSettingsRepositoryTest.kt` (2 теста)
+    - `PostgresCategoryRepositoryTest.kt` (9 тестов)
+    - `PostgresTimeRecordRepositoryTest.kt` (13 тестов)
+    - `PostgresRecordHistoryRepositoryTest.kt` (4 теста)
+    - `DatabaseFactoryTest.kt` (1 тест)
+  - Тестовая фикстура БД: `TestDatabaseFactory.kt` (in-memory H2 DataSource в режиме `MODE=PostgreSQL`).
+  - Интеграция Allure 2: `build.gradle.kts` с тасками `allureReport`, `allureServe`, `allureOpen`, слушатель `AllureJunit4` в `RandomOrderRunner`.
+  - Скрипт сводного отчета покрытия: [scripts/coverage_report.py](../scripts/coverage_report.py).
+  - Итоговый аналитический отчет: [docs/TESTING_REPORT.md](TESTING_REPORT.md).
+- **Способ проверки**:
+  - Запуск всех тестов из консоли: `./gradlew :domain:test :web:data:test allureReport` (все 109 тестов завершились успешно со 100% pass rate).
+  - Консольный отчет покрытия JaCoCo (`python3 scripts/coverage_report.py`):
+    - `:domain`: **Строки (Lines): 87.1%** (386/443), **Ветвления (Branches): 69.2%** (137/198).
+    - `:web:data`: **Строки (Lines): 88.5%** (377/426), **Ветвления (Branches): 60.8%** (62/102).
+- **Существенные принятые решения**:
+  - Использование Классической (Детройтской) школы для слоя данных `:web:data` с in-memory СУБД H2 в режиме эмуляции диалекта PostgreSQL (`MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH`) через `com.h2database:h2`. Это позволило тестировать реальные Exposed DAO сущности, SQL-запросы, транзакции и фильтры в максимально приближенном к production PostgreSQL диалекте, сохраняя мгновенную скорость (миллисекунды), изоляцию и 100% оффлайн-автономность без необходимости внешнего демона СУБД.
+  - Строгая изоляция объектов тестирования: в соответствии с пунктом 1 задания Лабораторной работы №1 («Написать unit-тесты для компонентов доступа к данным и бизнес логики») тесты написаны и сфокусированы строго на модулях `:domain` (Use Cases) и `:web:data` (Repositories/DAO).
+  - Покрытие эксклюзивных шлюзов BPMN: каждый процесс протестирован на ветку успешного выполнения (Happy Path) и ветку ошибки/возврата (BVA/валидация) на уровне чистой доменной логики и репозиториев.
+  - Сохранение жестких ограничений проекта: полное отсутствие inline-комментариев (`NO INLINE COMMENTS`), ровно 1 строка в блоке Act, запуск со случайным перемешиванием (`RandomOrderRunner`).
+  - Внедрение Allure 2 Report без устаревших Gradle Conventions через прямую регистрацию `AllureJunit4` RunListener в `RandomOrderRunner` и системное свойство `-Dallure.results.directory=<rootProject>/build/allure-results`. Добавлены задачи `./gradlew allureReport`, `./gradlew allureServe`, `./gradlew allureOpen` с автоматическим скачиванием и сборкой отчета через официальный `allure-commandline`.
+
+
+
