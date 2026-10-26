@@ -1,7 +1,8 @@
 package com.ppo.domain.usecase
 
+import com.ppo.domain.fixtures.FixtureContext
 import com.ppo.domain.fixtures.TestCategoryMother
-import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.fixtures.WithRegularUser
 import com.ppo.domain.repository.ICategoryRepository
 import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.every
@@ -24,8 +25,9 @@ class GetCategoriesUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
     fun shouldReturnCategoriesList_whenInvoked() = runBlocking {
-        val user = TestUserMother.regularUser()
+        val user = FixtureContext.user
         val list = listOf(TestCategoryMother.baseWorkCategory(), TestCategoryMother.userCustomCategory(user.id))
         every { categoryRepository.getCategoriesFlow(user.id) } returns flowOf(list)
 
@@ -35,8 +37,9 @@ class GetCategoriesUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
     fun shouldReturnEmptyList_whenUserHasNoCategories() = runBlocking {
-        val user = TestUserMother.regularUser()
+        val user = FixtureContext.user
         every { categoryRepository.getCategoriesFlow(user.id) } returns flowOf(emptyList())
 
         val result = useCase(user.id)

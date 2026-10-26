@@ -46,6 +46,22 @@
 - **`CategoryBuilder`**: методы `.withName()`, `.withColorHex()`, `.asDefault()`, `.withUserId()`, `.build()`.
 - **`UserBuilder`**: методы `.withLogin()`, `.withName()`, `.withPasswordHash()`, `.withRole()`, `.build()`.
 
+### 2.3. Декларативные кастомные фикстуры через аннотации (@-синтаксис)
+Для уменьшения шаблонного кода инициализации в блоках Arrange реализован механизм декларативных кастомных фикстур через аннотации перед тестовыми и вспомогательными методами (`com.ppo.domain.fixtures.*` и `com.ppo.web.data.fixtures.*`):
+- **Аннотации перед тестовыми методами**:
+  - `@WithRegularUser`: автоматическая инициализация профиля обычного пользователя.
+  - `@WithAdminUser`: автоматическая инициализация профиля администратора.
+  - `@WithStrictSettings(minDurationValue, minDurationUnit)`: создание и связывание строгих настроек с минимальным порогом и авто-остановкой.
+  - `@WithDefaultSettings`: базовые дефолтные настройки.
+  - `@WithBaseCategory`: системная базовая категория (`TestCategoryMother.baseWorkCategory()`).
+  - `@WithUserCategory`: пользовательская категория текущего пользователя (`TestCategoryMother.userCustomCategory(userId)`).
+  - `@WithCustomCategory(name, colorHex, isDefault)`: подготовка произвольной категории с заданными параметрами.
+  - `@WithActiveTimeRecord` / `@WithCompletedTimeRecord`: автоматическая генерация активной или завершенной записи времени.
+  - `@WithInMemoryDatabase`: автоматический подъем изолированной базы данных H2 (`MODE=PostgreSQL`) и накат схемы DDL.
+- **Аннотация перед методами фикстур**:
+  - `@CustomFixture(name = "...")`: маркировка кастомных методов подготовки окружения внутри тестовых классов, автоматически вызываемых раннером `RandomOrderRunner` перед прогоном каждого теста.
+- **Потокобезопасный доступ**: значения созданных через аннотации фикстур передаются в тест через потокобезопасный контекст `FixtureContext.user`, `FixtureContext.settings`, `DatabaseFixtureContext.dataSource` и автоматически очищаются в блоке `finally` раннера.
+
 ---
 
 ## 3. Методология: Лондонская школа vs Классическая (Детройтская)

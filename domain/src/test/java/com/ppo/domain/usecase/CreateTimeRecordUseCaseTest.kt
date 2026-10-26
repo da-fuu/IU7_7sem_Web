@@ -1,10 +1,7 @@
 package com.ppo.domain.usecase
 
 import com.ppo.domain.builders.CategoryBuilder
-import com.ppo.domain.builders.TimeRecordBuilder
-import com.ppo.domain.builders.UserSettingsBuilder
-import com.ppo.domain.fixtures.TestCategoryMother
-import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.fixtures.*
 import com.ppo.domain.model.DurationUnit
 import com.ppo.domain.repository.ICategoryRepository
 import com.ppo.domain.repository.ITimeRecordRepository
@@ -33,9 +30,11 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithUserCategory
     fun shouldCreateActiveRecord_whenEndTimeIsNull() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.userCustomCategory(user.id)
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val startTime = Instant.parse("2026-10-15T10:00:00Z")
         coEvery { categoryRepository.findCategoryById(category.id) } returns category
         coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)
@@ -48,12 +47,15 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithUserCategory
+    @WithStrictSettings(minDurationValue = 5, minDurationUnit = DurationUnit.minutes)
     fun shouldCreateCompletedRecord_whenValidTimeRangeAndAboveMinDuration() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.userCustomCategory(user.id)
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val startTime = Instant.parse("2026-10-15T10:00:00Z")
         val endTime = Instant.parse("2026-10-15T10:30:00Z")
-        val settings = UserSettingsBuilder().withUserId(user.id).withMinDuration(true, 5, DurationUnit.minutes).build()
+        val settings = FixtureContext.settings
         coEvery { categoryRepository.findCategoryById(category.id) } returns category
         coEvery { userSettingsRepository.getSettings(user.id) } returns settings
         coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)
@@ -66,8 +68,9 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
     fun shouldFailWithNoSuchElement_whenCategoryDoesNotExist() = runBlocking {
-        val user = TestUserMother.regularUser()
+        val user = FixtureContext.user
         val missingCategory = CategoryBuilder().build()
         coEvery { categoryRepository.findCategoryById(missingCategory.id) } returns null
 
@@ -78,8 +81,9 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
     fun shouldFailWithIllegalAccess_whenCategoryBelongsToAnotherUser() = runBlocking {
-        val user1 = TestUserMother.regularUser()
+        val user1 = FixtureContext.user
         val otherUser = TestUserMother.otherUser()
         val foreignCategory = TestCategoryMother.userCustomCategory(otherUser.id)
         coEvery { categoryRepository.findCategoryById(foreignCategory.id) } returns foreignCategory
@@ -91,9 +95,11 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithUserCategory
     fun shouldFailWithIllegalArgument_whenEndTimeBeforeStartTime() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.userCustomCategory(user.id)
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val startTime = Instant.parse("2026-10-15T12:00:00Z")
         val endTime = Instant.parse("2026-10-15T11:59:59Z")
         coEvery { categoryRepository.findCategoryById(category.id) } returns category
@@ -105,12 +111,15 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithUserCategory
+    @WithStrictSettings(minDurationValue = 5, minDurationUnit = DurationUnit.minutes)
     fun shouldFailWithIllegalState_whenDurationBelowConfiguredMinThreshold() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.userCustomCategory(user.id)
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val startTime = Instant.parse("2026-10-15T10:00:00Z")
         val endTime = Instant.parse("2026-10-15T10:04:59Z")
-        val settings = UserSettingsBuilder().withUserId(user.id).withMinDuration(true, 5, DurationUnit.minutes).build()
+        val settings = FixtureContext.settings
         coEvery { categoryRepository.findCategoryById(category.id) } returns category
         coEvery { userSettingsRepository.getSettings(user.id) } returns settings
 
@@ -121,12 +130,15 @@ class CreateTimeRecordUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithUserCategory
+    @WithStrictSettings(minDurationValue = 5, minDurationUnit = DurationUnit.minutes)
     fun shouldSucceed_whenDurationEqualsMinThresholdExactly() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.userCustomCategory(user.id)
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val startTime = Instant.parse("2026-10-15T10:00:00Z")
         val endTime = Instant.parse("2026-10-15T10:05:00Z")
-        val settings = UserSettingsBuilder().withUserId(user.id).withMinDuration(true, 5, DurationUnit.minutes).build()
+        val settings = FixtureContext.settings
         coEvery { categoryRepository.findCategoryById(category.id) } returns category
         coEvery { userSettingsRepository.getSettings(user.id) } returns settings
         coEvery { timeRecordRepository.saveRecord(any()) } returns Result.success(Unit)

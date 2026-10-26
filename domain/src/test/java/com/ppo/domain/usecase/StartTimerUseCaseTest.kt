@@ -1,8 +1,9 @@
 package com.ppo.domain.usecase
 
 import com.ppo.domain.builders.TimeRecordBuilder
-import com.ppo.domain.fixtures.TestCategoryMother
-import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.fixtures.FixtureContext
+import com.ppo.domain.fixtures.WithBaseCategory
+import com.ppo.domain.fixtures.WithRegularUser
 import com.ppo.domain.repository.ITimeRecordRepository
 import com.ppo.domain.runner.RandomOrderRunner
 import io.mockk.coEvery
@@ -27,9 +28,11 @@ class StartTimerUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithBaseCategory
     fun shouldStartTimer_whenNoActiveSessionExists() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.baseWorkCategory()
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val startTime = Instant.parse("2026-10-15T10:00:00Z")
         coEvery { repository.getActiveSession(user.id) } returns null
         coEvery { repository.saveRecord(any()) } returns Result.success(Unit)
@@ -42,9 +45,11 @@ class StartTimerUseCaseTest {
     }
 
     @Test
+    @WithRegularUser
+    @WithBaseCategory
     fun shouldFailToStartTimer_whenActiveSessionAlreadyRunning() = runBlocking {
-        val user = TestUserMother.regularUser()
-        val category = TestCategoryMother.baseWorkCategory()
+        val user = FixtureContext.user
+        val category = FixtureContext.category
         val active = TimeRecordBuilder().withUserId(user.id).asActive().build()
         coEvery { repository.getActiveSession(user.id) } returns active
 

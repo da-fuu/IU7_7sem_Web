@@ -1,7 +1,7 @@
 package com.ppo.domain.usecase
 
 import com.ppo.domain.builders.CategoryBuilder
-import com.ppo.domain.fixtures.TestUserMother
+import com.ppo.domain.fixtures.*
 import com.ppo.domain.model.CategoryId
 import com.ppo.domain.model.UserRole
 import com.ppo.domain.repository.ICategoryRepository
@@ -30,8 +30,9 @@ class AdminManageBaseCategoryUseCaseTest {
     }
 
     @Test
+    @WithAdminUser
     fun shouldSaveBaseCategory_whenAdminProvidesValidData() = runBlocking {
-        val admin = TestUserMother.adminUser()
+        val admin = FixtureContext.user
         val baseCategory = CategoryBuilder().asDefault().withName("Global Work").withColorHex("#3B82F6").build()
         coEvery { userRepository.getUserRole(admin.id) } returns UserRole.ADMIN
         coEvery { categoryRepository.findCategoryByName(null, "Global Work") } returns null
