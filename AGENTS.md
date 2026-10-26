@@ -32,11 +32,10 @@
 ## 3. Границы системы и ограничения
 
 ### 3.1. Внутренний контур (Система)
-- **Web Backend**: REST API сервис, реализующий Use Cases предметной области и отдающий Swagger UI.
+- **Web Backend**: REST API сервис (`:web:backend`), реализующий Use Cases предметной области и отдающий Swagger UI.
 - **Web Frontend**: Клиентское SPA-приложение (TypeScript + React + Vite).
-- **База данных**: Реляционная СУБД PostgreSQL; поддержка SQLite/Room для легаси клиентов.
+- **База данных**: Реляционная СУБД PostgreSQL (слой доступа `:web:data` на JetBrains Exposed).
 - **Инфраструктурный слой**: Nginx (Reverse Proxy, раздача статики), Docker Compose.
-- **Легаси-интерфейсы**: CLI (`:tech_ui`) и Android-клиент (`:app`), сохраненные из курса ППО.
 
 ### 3.2. Внешний контур
 - Браузеры пользователей (десктоп, мобильные).
@@ -89,46 +88,16 @@ IU7_7sem_web/
 │
 ├── web/                       # [Web-трек] Веб-компоненты
 │   ├── api/                   # Спецификация OpenAPI 3.1, мок-сервер, тесты (WebLab#2)
-│   ├── data/                  # Слой хранения PostgreSQL и сущности БД (WebLab#3)
+│   ├── data/                  # Слой хранения PostgreSQL и сущности БД (WebLab#3, TestingLab#1)
 │   ├── backend/               # REST API сервис на Ktor (WebLab#3)
 │   └── frontend/              # SPA приложение React+Vite (WebLab#8)
 │
-├── deploy/                    # Конфигурации Docker Compose, Nginx, мониторинга (WebLab#4)
-│
-└── ppo/                       # [Архив ППО] Легаси клиенты и хранилища курса ППО
-    ├── app/                   # Мобильное приложение (Android Jetpack Compose)
-    ├── tech_ui/               # CLI интерфейс (Kotlin JVM / Android dex)
-    ├── data/                  # Слой данных Room / SQLite
-    ├── data_objectbox/        # Слой данных ObjectBox NoSQL
-    ├── migration/             # Use case миграции данных
-    └── config.properties      # Конфигурация локального окружения CLI
+└── deploy/                    # Конфигурации Docker Compose, Nginx, мониторинга (WebLab#4)
 ```
 
 ---
 
 ## 6. Команды сборки, запуска и проверок
-
-### 6.1. Текущие команды существующего проекта (PPO)
-- Сборка исполняемого CLI JAR:
-  ```bash
-  ./gradlew :tech_ui:jar
-  # Результат: dist/tech_ui.jar
-  ```
-- Запуск CLI в локальном режиме:
-  ```bash
-  java -jar dist/tech_ui.jar [команда]
-  ```
-- Запуск CLI через REST API сервис (Бонус 2):
-  ```bash
-  java -jar dist/tech_ui.jar --api [команда]
-  ```
-- Сборка Android Dex для CLI:
-  ```bash
-  ./gradlew :tech_ui:dex
-  # Результат: dist/tech_ui_dex.jar
-  ```
-
-### 6.2. Команды для Web-лабораторных
 
 | Лабораторная | Команда | Назначение |
 | :--- | :--- | :--- |
