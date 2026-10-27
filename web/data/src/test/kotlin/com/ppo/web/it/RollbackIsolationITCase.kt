@@ -4,10 +4,12 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import java.util.UUID
 
+@RunWith(AllureRunner::class)
 class RollbackIsolationITCase {
     @Test
     fun rollsBackNestedRepositoryTransactionsAfterSuccessAndFailure() {

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 import datetime
 import json
+import os
 import sys
 import time
-import uuid
 import requests
 
-BASE_URL = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080"
+BASE_URL = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:18081"
 
 def run():
     print(f"[E2E] Starting simulation against {BASE_URL}")
     session = requests.Session()
 
-    suffix = uuid.uuid4().hex[:6]
-    login = f"e2e_user_{suffix}"
+    run_id = os.environ["E2E_RUN_ID"]
+    login = f"lab2e2e_{run_id}_1"
     password = "E2EPassword2026"
 
     print("[Step 1] Health check")

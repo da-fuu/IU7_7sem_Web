@@ -14,15 +14,16 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.time.Instant
-import java.util.UUID
 
+@RunWith(AllureRunner::class)
 class MvpScenarioITCase {
 
     @Test
     fun executeMvpDemonstrationScenario() = runBlocking {
         val client = HttpClient(CIO) {
-            defaultRequest { url(System.getProperty("SERVER_URL") ?: "http://localhost:8081") }
+            defaultRequest { url(System.getProperty("SERVER_URL") ?: "http://localhost:18081") }
             install(ContentNegotiation) {
                 jackson { registerModule(JavaTimeModule()) }
             }
@@ -33,10 +34,14 @@ class MvpScenarioITCase {
             ?: System.getenv("E2E_ITERATIONS")?.toIntOrNull()
             ?: 1
 
+        val runId = System.getenv("E2E_RUN_ID")
+        require(runId != null && runId.matches(Regex("[0-9a-f]{32}"))) {
+            "Run E2E through deploy/test/scripts/e2e_control.py"
+        }
+        require(iterations in 1..9999)
         var successCount = 0
         for (iteration in 1..iterations) {
-            val userSuffix = UUID.randomUUID().toString().take(8)
-            val demoLogin = "mvp_${userSuffix}_$iteration"
+            val demoLogin = "lab2e2e_${runId}_$iteration"
             val demoPassword = "MvpSecurePassword2026"
 
             val (healthStatus, healthLatency) = ui.clickHealthCheck()

@@ -3,8 +3,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPORT_DIR="${ROOT_DIR}/build/reports/traffic"
-TARGET_PORT="${TARGET_PORT:-8080}"
+REPORT_DIR="${REPORT_DIR:-${ROOT_DIR}/build/reports/traffic}"
+TARGET_PORT="${TARGET_PORT:-18081}"
 TARGET_URL="${TARGET_URL:-http://localhost:${TARGET_PORT}}"
 
 mkdir -p "${REPORT_DIR}"
@@ -56,7 +56,7 @@ if ! kill -0 "${CAPTURE_PID}" 2>/dev/null; then
     exit 1
 fi
 
-python3 "${SCRIPT_DIR}/run_e2e_scenario.py" "${TARGET_URL}"
+python3 "${ROOT_DIR}/deploy/test/scripts/e2e_control.py" run -- python3 "${SCRIPT_DIR}/run_e2e_scenario.py" "${TARGET_URL}"
 
 sleep 2
 

@@ -14,10 +14,47 @@ services:
       - ./scripts/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
       - ./scripts/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
       - ./scripts/03_shared_fixtures.sql:/docker-entrypoint-initdb.d/03_shared_fixtures.sql:ro
+      - ./scripts/04_e2e_control.sql:/docker-entrypoint-initdb.d/04_e2e_control.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s
       retries: 20
+  backend:
+    build:
+      context: ../..
+      dockerfile: web/backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${SHARED_POSTGRES_DB:-timetracker_test}
+      DB_USER: ${SHARED_POSTGRES_USER:-timetracker_test}
+      DB_PASSWORD: ${SHARED_POSTGRES_PASSWORD:-timetracker_test_pass}
+      JWT_SECRET: ${SHARED_JWT_SECRET:-timetracker_test_secret_key_2026}
+      AUTO_STOP_INTERVAL_MS: 9223372036854775807
+      PORT: 8080
+    ports:
+      - "127.0.0.1:${SHARED_BACKEND_PORT:-18081}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  cleanup:
+    build:
+      context: ../..
+      dockerfile: deploy/test/Dockerfile.test-runner
+    restart: unless-stopped
+    command: ["python3", "/e2e_control.py", "watch"]
+    volumes:
+      - ./scripts/e2e_control.py:/e2e_control.py:ro
+    environment:
+      POSTGRES_TEST_HOST: postgres
+      POSTGRES_TEST_PORT: 5432
+      POSTGRES_TEST_DB: ${SHARED_POSTGRES_DB:-timetracker_test}
+      POSTGRES_TEST_USER: ${SHARED_POSTGRES_USER:-timetracker_test}
+      POSTGRES_TEST_PASSWORD: ${SHARED_POSTGRES_PASSWORD:-timetracker_test_pass}
+    depends_on:
+      postgres:
+        condition: service_healthy
 volumes:
   shared-postgres:

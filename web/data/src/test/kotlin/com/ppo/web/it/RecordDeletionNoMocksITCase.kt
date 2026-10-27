@@ -10,12 +10,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.junit.Rule
 import org.junit.Before
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
+@RunWith(AllureRunner::class)
 class RecordDeletionNoMocksITCase {
 
     @get:Rule

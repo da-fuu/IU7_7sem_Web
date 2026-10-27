@@ -18,7 +18,7 @@ jobs:
       - uses: actions/cache/restore@v4
         with:
           path: .allure-history
-          key: allure-history-${{ github.ref }}-${{ github.run_id }}
+          key: allure-history-${{ github.ref }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: allure-history-${{ github.ref }}-
       - name: Prepare results
         run: |
@@ -45,23 +45,59 @@ jobs:
             fi
           done
           docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner ./gradlew integrationTest
-      - name: Start backend
+      - name: Check shared backend and cleanup service
+        id: backend_check
+        env:
+          SERVER_URL: ${{ vars.SHARED_BACKEND_URL || 'http://127.0.0.1:18081' }}
         run: |
-          docker compose -f deploy/test/docker-compose.test.yml up -d --build backend-test
-          docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner sh -c 'for i in $(seq 1 60); do curl -fsS http://backend-test:8080/health && exit 0; sleep 1; done; exit 1'
+          test "$(docker compose -p timetracker-lab2-shared -f deploy/test/docker-compose.shared.yml ps --status running -q cleanup | wc -l)" -eq 1
+          deployed_hash=$(docker compose -p timetracker-lab2-shared -f deploy/test/docker-compose.shared.yml exec -T backend sha256sum /app/app.jar | cut -d ' ' -f1)
+          expected_hash=$(sha256sum web/backend/build/libs/backend.jar | cut -d ' ' -f1)
+          cleanup_hash=$(docker compose -p timetracker-lab2-shared -f deploy/test/docker-compose.shared.yml exec -T cleanup sha256sum /e2e_control.py | cut -d ' ' -f1)
+          expected_cleanup_hash=$(sha256sum deploy/test/scripts/e2e_control.py | cut -d ' ' -f1)
+          if [ "$cleanup_hash" != "$expected_cleanup_hash" ]; then
+            echo "::error::Shared cleanup service differs from this checkout; redeploy it when no other tests are running"
+            exit 1
+          fi
+          if [ "$deployed_hash" != "$expected_hash" ]; then
+            echo "::error::Shared backend differs from this checkout; redeploy it when no other tests are running"
+            exit 1
+          fi
+          curl -fsS "${SERVER_URL:-http://127.0.0.1:18081}/health"
+      - name: Verify E2E cleanup isolation
+        id: cleanup_check
+        env:
+          POSTGRES_TEST_HOST: ${{ vars.POSTGRES_TEST_HOST || '127.0.0.1' }}
+          POSTGRES_TEST_PORT: ${{ vars.POSTGRES_TEST_PORT || '55432' }}
+          POSTGRES_TEST_DB: ${{ vars.POSTGRES_TEST_DB || 'timetracker_test' }}
+          POSTGRES_TEST_USER: ${{ vars.POSTGRES_TEST_USER || 'timetracker_test' }}
+          POSTGRES_TEST_PASSWORD: ${{ secrets.POSTGRES_TEST_PASSWORD || 'timetracker_test_pass' }}
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.shared-runner.yml run --rm -e ALLURE_RESULTS_DIR=/workspace/build/allure-results test-runner python3 deploy/test/scripts/test_e2e_control.py
       - name: E2E test
         id: e2e
-        run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew e2eTest
+        env:
+          POSTGRES_TEST_HOST: ${{ vars.POSTGRES_TEST_HOST || '127.0.0.1' }}
+          POSTGRES_TEST_PORT: ${{ vars.POSTGRES_TEST_PORT || '55432' }}
+          POSTGRES_TEST_DB: ${{ vars.POSTGRES_TEST_DB || 'timetracker_test' }}
+          POSTGRES_TEST_USER: ${{ vars.POSTGRES_TEST_USER || 'timetracker_test' }}
+          POSTGRES_TEST_PASSWORD: ${{ secrets.POSTGRES_TEST_PASSWORD || 'timetracker_test_pass' }}
+          SERVER_URL: ${{ vars.SHARED_BACKEND_URL || 'http://127.0.0.1:18081' }}
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner python3 deploy/test/scripts/e2e_control.py run -- ./gradlew e2eTest
       - name: Mark unexecuted stages
         if: always()
         env:
           UNIT_OUTCOME: ${{ steps.unit.outcome }}
           INTEGRATION_OUTCOME: ${{ steps.integration.outcome }}
+          BACKEND_OUTCOME: ${{ steps.backend_check.outcome }}
+          CLEANUP_OUTCOME: ${{ steps.cleanup_check.outcome }}
           E2E_OUTCOME: ${{ steps.e2e.outcome }}
         run: python3 scripts/generate_skipped_results.py build/allure-results
       - name: Add test results to Actions summary
         if: always()
         run: python3 scripts/write_ci_test_summary.py
+      - name: Identify run for Allure trends
+        if: always()
+        run: python3 scripts/write_allure_executor.py
       - name: Generate report
         id: report
         if: always()
@@ -73,7 +109,7 @@ jobs:
         if: always()
         with:
           path: .allure-history
-          key: allure-history-${{ github.ref }}-${{ github.run_id }}
+          key: allure-history-${{ github.ref }}-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

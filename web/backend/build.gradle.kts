@@ -67,6 +67,7 @@ tasks.test {
 }
 
 val e2eTest by tasks.registering(Test::class) {
+    outputs.upToDateWhen { false }
     description = "Runs end-to-end MVP demonstration scenario test"
     group = "verification"
     testClassesDirs = sourceSets["test"].output.classesDirs
@@ -78,6 +79,6 @@ val e2eTest by tasks.registering(Test::class) {
     systemProperty("DB_NAME", System.getenv("POSTGRES_TEST_DB") ?: "timetracker_test")
     systemProperty("DB_USER", System.getenv("POSTGRES_TEST_USER") ?: "timetracker_test")
     systemProperty("DB_PASSWORD", System.getenv("POSTGRES_TEST_PASSWORD") ?: "timetracker_test_pass")
-    systemProperty("SERVER_URL", System.getenv("SERVER_URL") ?: "http://localhost:8081")
+    systemProperty("SERVER_URL", System.getenv("SERVER_URL") ?: "http://localhost:18081")
     systemProperty("e2e.iterations", System.getProperty("e2e.iterations") ?: System.getenv("E2E_ITERATIONS") ?: "1")
 }

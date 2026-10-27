@@ -16,7 +16,7 @@ echo "========================================================================"
 
 cd "${ROOT_DIR}"
 START_TIME=$(date +%s)
-./gradlew e2eTest --rerun-tasks -De2e.iterations="${ITERATIONS}"
+python3 deploy/test/scripts/e2e_control.py run -- ./gradlew e2eTest -De2e.iterations="${ITERATIONS}"
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 

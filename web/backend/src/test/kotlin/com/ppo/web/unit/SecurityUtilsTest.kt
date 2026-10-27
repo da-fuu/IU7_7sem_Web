@@ -2,13 +2,16 @@ package com.ppo.web.unit
 
 import com.ppo.domain.model.UserRole
 import com.ppo.web.security.SecurityUtils
+import com.ppo.web.it.AllureRunner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
 import java.util.UUID
 
+@RunWith(AllureRunner::class)
 class SecurityUtilsTest {
 
     @Test
