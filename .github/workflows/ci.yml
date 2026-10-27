@@ -1,0 +1,61 @@
+name: Testing lab 2
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set container user
+        run: |
+          echo "TEST_UID=$(id -u)" >> "$GITHUB_ENV"
+          echo "TEST_GID=$(id -g)" >> "$GITHUB_ENV"
+      - uses: actions/cache/restore@v4
+        with:
+          path: .allure-history
+          key: allure-history-${{ github.ref }}-${{ github.run_id }}
+          restore-keys: allure-history-${{ github.ref }}-
+      - name: Prepare results
+        run: |
+          mkdir -p build/allure-results
+          if [ -d .allure-history ]; then cp -r .allure-history build/allure-results/history; fi
+      - name: Build test runner
+        run: docker compose -f deploy/test/docker-compose.test.yml build test-runner
+      - name: Unit tests and backend build
+        id: unit
+        run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew test :web:backend:jar
+      - name: Integration tests
+        id: integration
+        run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew integrationTest
+      - name: Start backend
+        run: |
+          docker compose -f deploy/test/docker-compose.test.yml up -d --build backend-test
+          docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner sh -c 'for i in $(seq 1 60); do curl -fsS http://backend-test:8080/health && exit 0; sleep 1; done; exit 1'
+      - name: E2E test
+        id: e2e
+        run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew e2eTest
+      - name: Mark unexecuted stages
+        if: always()
+        env:
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+          INTEGRATION_OUTCOME: ${{ steps.integration.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
+        run: python3 scripts/generate_skipped_results.py build/allure-results
+      - name: Generate report
+        if: always()
+        run: docker compose -f deploy/test/docker-compose.test.yml run --rm --no-deps test-runner ./gradlew allureReport
+      - name: Save history
+        if: always()
+        run: if [ -d build/reports/allure-report/history ]; then mkdir -p .allure-history; cp -r build/reports/allure-report/history/. .allure-history/; fi
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .allure-history
+          key: allure-history-${{ github.ref }}-${{ github.run_id }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-report
+          path: build/reports/allure-report
+      - name: Remove isolated test environment
+        if: always()
+        run: docker compose -f deploy/test/docker-compose.test.yml down -v --remove-orphans

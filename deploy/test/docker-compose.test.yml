@@ -1,0 +1,54 @@
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: timetracker_test
+      POSTGRES_USER: timetracker_test
+      POSTGRES_PASSWORD: timetracker_test_pass
+    volumes:
+      - ./scripts/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./scripts/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U timetracker_test -d timetracker_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  backend-test:
+    build:
+      context: ../..
+      dockerfile: web/backend/Dockerfile
+    environment:
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_NAME: timetracker_test
+      DB_USER: timetracker_test
+      DB_PASSWORD: timetracker_test_pass
+      JWT_SECRET: timetracker_test_secret_key_2026
+      PORT: 8080
+    ports:
+      - "127.0.0.1:${BACKEND_TEST_PORT:-0}:8080"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+  test-runner:
+    build:
+      context: ../..
+      dockerfile: deploy/test/Dockerfile.test-runner
+    user: "${TEST_UID:-1000}:${TEST_GID:-1000}"
+    working_dir: /workspace
+    volumes:
+      - ../..:/workspace
+      - gradle-cache:/gradle
+    environment:
+      POSTGRES_TEST_HOST: postgres-test
+      POSTGRES_TEST_PORT: 5432
+      POSTGRES_TEST_DB: timetracker_test
+      POSTGRES_TEST_USER: timetracker_test
+      POSTGRES_TEST_PASSWORD: timetracker_test_pass
+      SERVER_URL: http://backend-test:8080
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+
+volumes:
+  gradle-cache:

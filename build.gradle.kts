@@ -32,7 +32,6 @@ val installAllureCli by tasks.registering(Sync::class) {
 
 tasks.register<Exec>("allureReport") {
     dependsOn(installAllureCli)
-    dependsOn(":domain:test", ":web:data:test")
     val cliDir = layout.buildDirectory.dir("allure-cli/allure-2.27.0/bin/allure").get().asFile
     val resultsDir = layout.buildDirectory.dir("allure-results").get().asFile
     val reportDir = layout.buildDirectory.dir("reports/allure-report").get().asFile
@@ -41,10 +40,21 @@ tasks.register<Exec>("allureReport") {
 
 tasks.register<Exec>("allureServe") {
     dependsOn(installAllureCli)
-    dependsOn(":domain:test", ":web:data:test")
     val cliDir = layout.buildDirectory.dir("allure-cli/allure-2.27.0/bin/allure").get().asFile
     val resultsDir = layout.buildDirectory.dir("allure-results").get().asFile
     commandLine(cliDir.absolutePath, "serve", resultsDir.absolutePath)
+}
+
+tasks.register("integrationTest") {
+    group = "verification"
+    description = "Executes integration tests"
+    dependsOn(":web:data:integrationTest")
+}
+
+tasks.register("e2eTest") {
+    group = "verification"
+    description = "Executes end-to-end MVP scenario test"
+    dependsOn(":web:backend:e2eTest")
 }
 
 tasks.register<Exec>("allureOpen") {

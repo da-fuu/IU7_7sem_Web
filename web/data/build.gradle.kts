@@ -21,6 +21,7 @@ tasks.jar {
 }
 
 tasks.test {
+    exclude("**/*ITCase.*")
     finalizedBy(tasks.jacocoTestReport)
     systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
     project.findProperty("test.random.seed")?.let {
@@ -55,8 +56,17 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.java.time)
 
+    testImplementation(libs.mockk)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("com.h2database:h2:2.2.224")
     testImplementation("io.qameta.allure:allure-junit4:2.27.0")
+}
+
+val integrationTest by tasks.registering(Test::class) {
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    include("**/*ITCase.*")
+    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
 }

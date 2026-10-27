@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.jetbrains.kotlin.jvm)
     application
+    jacoco
 }
 
 application {
@@ -46,6 +47,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
+    testImplementation("io.qameta.allure:allure-junit4:2.27.0")
+    testImplementation(libs.ktor.client.cio)
 }
 
 tasks.jar {
@@ -55,4 +58,26 @@ tasks.jar {
     }
     from(sourceSets.main.get().output)
     from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+}
+
+tasks.test {
+    include("**/*Test.*")
+    exclude("**/*ITCase.*")
+    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
+}
+
+val e2eTest by tasks.registering(Test::class) {
+    description = "Runs end-to-end MVP demonstration scenario test"
+    group = "verification"
+    testClassesDirs = sourceSets["test"].output.classesDirs
+    classpath = sourceSets["test"].runtimeClasspath
+    include("**/MvpScenarioITCase.*")
+    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
+    systemProperty("DB_HOST", System.getenv("POSTGRES_TEST_HOST") ?: "localhost")
+    systemProperty("DB_PORT", System.getenv("POSTGRES_TEST_PORT") ?: "5434")
+    systemProperty("DB_NAME", System.getenv("POSTGRES_TEST_DB") ?: "timetracker_test")
+    systemProperty("DB_USER", System.getenv("POSTGRES_TEST_USER") ?: "timetracker_test")
+    systemProperty("DB_PASSWORD", System.getenv("POSTGRES_TEST_PASSWORD") ?: "timetracker_test_pass")
+    systemProperty("SERVER_URL", System.getenv("SERVER_URL") ?: "http://localhost:8081")
+    systemProperty("e2e.iterations", System.getProperty("e2e.iterations") ?: System.getenv("E2E_ITERATIONS") ?: "1")
 }
