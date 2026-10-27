@@ -58,6 +58,8 @@ fi
 
 python3 "${SCRIPT_DIR}/run_e2e_scenario.py" "${TARGET_URL}"
 
+sleep 2
+
 if [ -n "${CAPTURE_PID}" ]; then
     kill -2 "${CAPTURE_PID}" 2>/dev/null || true
     wait "${CAPTURE_PID}" 2>/dev/null || true

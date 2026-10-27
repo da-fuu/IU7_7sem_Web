@@ -3,6 +3,8 @@ package com.ppo.web.it
 import com.ppo.domain.repository.IPasswordHasher
 import com.ppo.web.data.db.DatabaseFactory
 import java.security.MessageDigest
+import java.sql.DriverManager
+import java.util.UUID
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import javax.sql.DataSource
@@ -19,7 +21,9 @@ object TestDbHelper {
     private val user: String = System.getProperty("DB_USER") ?: System.getenv("POSTGRES_TEST_USER") ?: "timetracker_test"
     private val pass: String = System.getProperty("DB_PASSWORD") ?: System.getenv("POSTGRES_TEST_PASSWORD") ?: "timetracker_test_pass"
 
-    val jdbcUrl: String = "jdbc:postgresql://$host:$port/$dbName"
+    private val baseJdbcUrl = "jdbc:postgresql://$host:$port/$dbName"
+    private val schemaName = "it_" + UUID.randomUUID().toString().replace("-", "")
+    val jdbcUrl: String = "$baseJdbcUrl?currentSchema=$schemaName"
 
     @Volatile
     private var sharedDataSource: DataSource? = null
@@ -30,7 +34,10 @@ object TestDbHelper {
         }
     }
 
-    fun createDataSource(customPoolSize: Int = 10): DataSource {
+    private fun createDataSource(customPoolSize: Int = 10): DataSource {
+        DriverManager.getConnection(baseJdbcUrl, user, pass).use { connection ->
+            connection.createStatement().use { it.execute("CREATE SCHEMA $schemaName") }
+        }
         val config = HikariConfig().apply {
             this.jdbcUrl = TestDbHelper.jdbcUrl
             this.username = user
@@ -41,7 +48,14 @@ object TestDbHelper {
             this.connectionTimeout = 5000
             this.validationTimeout = 3000
         }
-        return HikariDataSource(config)
+        val dataSource = HikariDataSource(config)
+        Runtime.getRuntime().addShutdownHook(Thread {
+            dataSource.close()
+            DriverManager.getConnection(baseJdbcUrl, user, pass).use { connection ->
+                connection.createStatement().use { it.execute("DROP SCHEMA IF EXISTS $schemaName CASCADE") }
+            }
+        })
+        return dataSource
     }
 
     fun initTestSchema() {
