@@ -9,18 +9,21 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
+import org.junit.Before
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class RecordCreationWithMocksITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val rawUserId = UUID.randomUUID()
     private val userId = UserId(rawUserId)
@@ -28,15 +31,9 @@ class RecordCreationWithMocksITCase {
 
     @Before
     fun setUp() {
-        TestDbHelper.initTestSchema()
         transaction {
-            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawUserId', 'rec_user_${rawUserId.toString().take(8)}', 'Record User', 'hash', 'USER')")
+            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawUserId', 'rec_user_${rawUserId.toString()}', 'Record User', 'hash', 'USER')")
         }
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
     }
 
     @Test

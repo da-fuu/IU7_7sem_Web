@@ -46,3 +46,6 @@ __pycache__/
 # Node & Frontend
 node_modules/
 .npm/
+
+# Local GitHub Actions runner
+.local/actions-runner/

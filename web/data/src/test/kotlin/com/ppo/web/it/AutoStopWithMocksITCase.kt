@@ -12,17 +12,20 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
+import org.junit.Before
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class AutoStopWithMocksITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val rawUserId = UUID.randomUUID()
     private val rawRecordId = UUID.randomUUID()
@@ -33,16 +36,10 @@ class AutoStopWithMocksITCase {
 
     @Before
     fun setUp() {
-        TestDbHelper.initTestSchema()
         transaction {
-            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawUserId', 'autostop_${rawUserId.toString().take(8)}', 'AutoStop User', 'hash', 'USER')")
+            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawUserId', 'autostop_${rawUserId.toString()}', 'AutoStop User', 'hash', 'USER')")
             exec("INSERT INTO time_records (id, user_id, category_id, start_time, end_time, description) VALUES ('$rawRecordId', '$rawUserId', '$categoryId', '$startTime', NULL, 'Long Active Task')")
         }
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
     }
 
     @Test

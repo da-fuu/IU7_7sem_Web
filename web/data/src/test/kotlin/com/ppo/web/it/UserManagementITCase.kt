@@ -9,15 +9,17 @@ import com.ppo.domain.usecase.RegisterUserUseCase
 import com.ppo.web.data.repository.PostgresUserRepository
 import com.ppo.web.data.repository.PostgresUserSettingsRepository
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
 import java.util.UUID
 
 class UserManagementITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val dataSource = TestDbHelper.getDataSource()
     private val userRepository = PostgresUserRepository(dataSource)
@@ -29,20 +31,9 @@ class UserManagementITCase {
     private val getUserInfoUseCase = GetUserInfoUseCase(userRepository)
     private val manageUserSettingsUseCase = ManageUserSettingsUseCase(userSettingsRepository)
 
-    @Before
-    fun setUp() {
-        TestDbHelper.initTestSchema()
-        TestDbHelper.resetDatabase()
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
-    }
-
     @Test
     fun executeUserManagementFunctionalityScenario(): Unit = runBlocking {
-        val testSuffix = UUID.randomUUID().toString().take(8)
+        val testSuffix = UUID.randomUUID().toString()
         val login = "dev_$testSuffix"
         val password = "StrongPassword123"
         val name = "Integration Developer"

@@ -1,0 +1,23 @@
+name: timetracker-lab2-shared
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SHARED_POSTGRES_DB:-timetracker_test}
+      POSTGRES_USER: ${SHARED_POSTGRES_USER:-timetracker_test}
+      POSTGRES_PASSWORD: ${SHARED_POSTGRES_PASSWORD:-timetracker_test_pass}
+    ports:
+      - "127.0.0.1:${SHARED_POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - shared-postgres:/var/lib/postgresql/data
+      - ./scripts/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./scripts/02_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+      - ./scripts/03_shared_fixtures.sql:/docker-entrypoint-initdb.d/03_shared_fixtures.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  shared-postgres:

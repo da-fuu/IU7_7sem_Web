@@ -1,8 +1,14 @@
 name: Testing lab 2
-on: [push, pull_request]
+on:
+  push:
+  workflow_dispatch:
+env:
+  COMPOSE_PROJECT_NAME: lab2-ci-${{ github.run_id }}-${{ github.run_attempt }}
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, timetracker-lab2]
+    outputs:
+      pages_artifact: ${{ steps.pages_upload.outcome }}
     steps:
       - uses: actions/checkout@v4
       - name: Set container user
@@ -25,7 +31,20 @@ jobs:
         run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew test :web:backend:jar
       - name: Integration tests
         id: integration
-        run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew integrationTest
+        env:
+          POSTGRES_TEST_HOST: ${{ vars.POSTGRES_TEST_HOST || '127.0.0.1' }}
+          POSTGRES_TEST_PORT: ${{ vars.POSTGRES_TEST_PORT || '55432' }}
+          POSTGRES_TEST_DB: ${{ vars.POSTGRES_TEST_DB || 'timetracker_test' }}
+          POSTGRES_TEST_USER: ${{ vars.POSTGRES_TEST_USER || 'timetracker_test' }}
+          POSTGRES_TEST_PASSWORD: ${{ secrets.POSTGRES_TEST_PASSWORD || 'timetracker_test_pass' }}
+        run: |
+          for setting in POSTGRES_TEST_HOST POSTGRES_TEST_DB POSTGRES_TEST_USER POSTGRES_TEST_PASSWORD; do
+            if [ -z "${!setting}" ]; then
+              echo "::error::Configure ${setting} for the shared PostgreSQL test stand"
+              exit 1
+            fi
+          done
+          docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner ./gradlew integrationTest
       - name: Start backend
         run: |
           docker compose -f deploy/test/docker-compose.test.yml up -d --build backend-test
@@ -40,7 +59,11 @@ jobs:
           INTEGRATION_OUTCOME: ${{ steps.integration.outcome }}
           E2E_OUTCOME: ${{ steps.e2e.outcome }}
         run: python3 scripts/generate_skipped_results.py build/allure-results
+      - name: Add test results to Actions summary
+        if: always()
+        run: python3 scripts/write_ci_test_summary.py
       - name: Generate report
+        id: report
         if: always()
         run: docker compose -f deploy/test/docker-compose.test.yml run --rm --no-deps test-runner ./gradlew allureReport
       - name: Save history
@@ -56,6 +79,37 @@ jobs:
         with:
           name: allure-report
           path: build/reports/allure-report
+      - name: Stage local Allure report
+        if: always() && steps.report.outcome == 'success'
+        env:
+          ALLURE_LOCAL_REPORT_DIR: ${{ vars.ALLURE_LOCAL_REPORT_DIR || '/home/dafuu/IU7_7sem_Web/.local/actions-runner/reports' }}
+        run: ./scripts/stage_local_allure_report.sh
+      - name: Prepare Allure for GitHub Pages
+        id: pages_upload
+        if: always() && steps.report.outcome == 'success' && (github.ref_name == 'tests_02' || github.ref_name == github.event.repository.default_branch)
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: build/reports/allure-report
       - name: Remove isolated test environment
         if: always()
         run: docker compose -f deploy/test/docker-compose.test.yml down -v --remove-orphans
+
+  publish-report:
+    if: always() && needs.tests.outputs.pages_artifact == 'success'
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: allure-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish Allure report
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Add report link to Actions summary
+        run: echo "[Open Allure report](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"

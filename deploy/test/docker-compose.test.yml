@@ -40,15 +40,12 @@ services:
       - ../..:/workspace
       - gradle-cache:/gradle
     environment:
-      POSTGRES_TEST_HOST: postgres-test
-      POSTGRES_TEST_PORT: 5432
-      POSTGRES_TEST_DB: timetracker_test
-      POSTGRES_TEST_USER: timetracker_test
-      POSTGRES_TEST_PASSWORD: timetracker_test_pass
+      POSTGRES_TEST_HOST: ${POSTGRES_TEST_HOST:-postgres-test}
+      POSTGRES_TEST_PORT: ${POSTGRES_TEST_PORT:-5432}
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-timetracker_test}
+      POSTGRES_TEST_USER: ${POSTGRES_TEST_USER:-timetracker_test}
+      POSTGRES_TEST_PASSWORD: ${POSTGRES_TEST_PASSWORD:-timetracker_test_pass}
       SERVER_URL: http://backend-test:8080
-    depends_on:
-      postgres-test:
-        condition: service_healthy
 
 volumes:
   gradle-cache:

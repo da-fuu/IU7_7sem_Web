@@ -1,0 +1,9 @@
+services:
+  test-runner:
+    network_mode: host
+    environment:
+      POSTGRES_TEST_HOST: ${POSTGRES_TEST_HOST:-127.0.0.1}
+      POSTGRES_TEST_PORT: ${POSTGRES_TEST_PORT:-55432}
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-timetracker_test}
+      POSTGRES_TEST_USER: ${POSTGRES_TEST_USER:-timetracker_test}
+      POSTGRES_TEST_PASSWORD: ${POSTGRES_TEST_PASSWORD:-timetracker_test_pass}

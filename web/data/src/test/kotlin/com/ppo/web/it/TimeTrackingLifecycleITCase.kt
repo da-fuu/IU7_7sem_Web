@@ -7,18 +7,20 @@ import com.ppo.domain.usecase.GetTimeRecordsUseCase
 import com.ppo.domain.usecase.UpdateTimeRecordUseCase
 import com.ppo.web.data.repository.*
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
 import java.time.Instant
 import java.util.UUID
 
 class TimeTrackingLifecycleITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val dataSource = TestDbHelper.getDataSource()
     private val timeRecordRepository = PostgresTimeRecordRepository(dataSource)
@@ -32,22 +34,11 @@ class TimeTrackingLifecycleITCase {
     private val deleteRecordUseCase = DeleteRecordUseCase(timeRecordRepository)
     private val getTimeRecordsUseCase = GetTimeRecordsUseCase(timeRecordRepository)
 
-    @Before
-    fun setUp() {
-        TestDbHelper.initTestSchema()
-        TestDbHelper.resetDatabase()
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
-    }
-
     @Test
     fun executeTimeTrackingFunctionalityScenario(): Unit = runBlocking {
         val testUserId = UserId(UUID.randomUUID())
         userRepository.saveUser(
-            User(testUserId, "tracking_user", "Tracking Developer", "hash", UserRole.USER)
+            User(testUserId, "tracking_${testUserId.value}", "Tracking Developer", "hash", UserRole.USER)
         )
         userSettingsRepository.updateSettings(
             UserSettings(

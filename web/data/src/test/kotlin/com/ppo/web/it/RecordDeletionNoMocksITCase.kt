@@ -6,17 +6,20 @@ import com.ppo.domain.usecase.DeleteRecordUseCase
 import com.ppo.web.data.repository.PostgresTimeRecordRepository
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
+import org.junit.Before
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class RecordDeletionNoMocksITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val rawUserId = UUID.randomUUID()
     private val rawForeignUserId = UUID.randomUUID()
@@ -28,20 +31,14 @@ class RecordDeletionNoMocksITCase {
 
     @Before
     fun setUp() {
-        TestDbHelper.initTestSchema()
         val now = Instant.now().truncatedTo(ChronoUnit.SECONDS)
         val startTime = now.minus(1, ChronoUnit.HOURS)
         val endTime = now
         transaction {
-            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawUserId', 'del_user_${rawUserId.toString().take(8)}', 'Delete User', 'hash', 'USER')")
-            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawForeignUserId', 'foreign_${rawForeignUserId.toString().take(8)}', 'Foreign User', 'hash', 'USER')")
+            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawUserId', 'del_user_${rawUserId.toString()}', 'Delete User', 'hash', 'USER')")
+            exec("INSERT INTO users (id, login, name, password_hash, role) VALUES ('$rawForeignUserId', 'foreign_${rawForeignUserId.toString()}', 'Foreign User', 'hash', 'USER')")
             exec("INSERT INTO time_records (id, user_id, category_id, start_time, end_time, description) VALUES ('$rawRecordId', '$rawUserId', '$categoryId', '$startTime', '$endTime', 'Record to delete')")
         }
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
     }
 
     @Test

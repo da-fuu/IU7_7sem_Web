@@ -7,16 +7,18 @@ import com.ppo.domain.usecase.RollbackRecordHistoryUseCase
 import com.ppo.domain.usecase.UpdateTimeRecordUseCase
 import com.ppo.web.data.repository.*
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
 import java.time.Instant
 import java.util.UUID
 
 class RecordHistoryAuditITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val dataSource = TestDbHelper.getDataSource()
     private val timeRecordRepository = PostgresTimeRecordRepository(dataSource)
@@ -30,24 +32,13 @@ class RecordHistoryAuditITCase {
     private val getRecordHistoryUseCase = GetRecordHistoryUseCase(timeRecordRepository, recordHistoryRepository)
     private val rollbackRecordHistoryUseCase = RollbackRecordHistoryUseCase(timeRecordRepository, recordHistoryRepository)
 
-    @Before
-    fun setUp() {
-        TestDbHelper.initTestSchema()
-        TestDbHelper.resetDatabase()
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
-    }
-
     @Test
     fun executeRecordHistoryAuditAndForwardOnlyRollbackScenario(): Unit = runBlocking {
         val testUserId = UserId(UUID.randomUUID())
         val strangerUserId = UserId(UUID.randomUUID())
 
-        userRepository.saveUser(User(testUserId, "audit_author", "Audit Author", "hash", UserRole.USER))
-        userRepository.saveUser(User(strangerUserId, "stranger_user", "Stranger", "hash", UserRole.USER))
+        userRepository.saveUser(User(testUserId, "audit_${testUserId.value}", "Audit Author", "hash", UserRole.USER))
+        userRepository.saveUser(User(strangerUserId, "stranger_${strangerUserId.value}", "Stranger", "hash", UserRole.USER))
 
         val baseCategoryId = CategoryId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
         val startTime = Instant.now().minusSeconds(3600)

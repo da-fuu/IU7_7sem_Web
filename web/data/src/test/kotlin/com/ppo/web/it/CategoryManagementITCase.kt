@@ -5,16 +5,18 @@ import com.ppo.domain.usecase.*
 import com.ppo.web.data.repository.PostgresCategoryRepository
 import com.ppo.web.data.repository.PostgresUserRepository
 import kotlinx.coroutines.runBlocking
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.junit.Rule
 import java.util.UUID
 
 class CategoryManagementITCase {
+
+    @get:Rule
+    val rollbackRule = TestDbHelper.rollbackRule()
 
     private val dataSource = TestDbHelper.getDataSource()
     private val categoryRepository = PostgresCategoryRepository(dataSource)
@@ -26,27 +28,16 @@ class CategoryManagementITCase {
     private val adminManageBaseCategoryUseCase = AdminManageBaseCategoryUseCase(categoryRepository, userRepository)
     private val adminDeleteBaseCategoryUseCase = AdminDeleteBaseCategoryUseCase(categoryRepository, userRepository)
 
-    @Before
-    fun setUp() {
-        TestDbHelper.initTestSchema()
-        TestDbHelper.resetDatabase()
-    }
-
-    @After
-    fun tearDown() {
-        TestDbHelper.resetDatabase()
-    }
-
     @Test
     fun executeCategoryManagementFunctionalityScenario(): Unit = runBlocking {
         val regularUserId = UserId(UUID.randomUUID())
         val adminUserId = UserId(UUID.randomUUID())
 
         userRepository.saveUser(
-            User(regularUserId, "regular_cat_user", "Regular Tester", "hash", UserRole.USER)
+            User(regularUserId, "regular_${regularUserId.value}", "Regular Tester", "hash", UserRole.USER)
         )
         userRepository.saveUser(
-            User(adminUserId, "admin_cat_user", "Admin Tester", "hash", UserRole.ADMIN)
+            User(adminUserId, "admin_${adminUserId.value}", "Admin Tester", "hash", UserRole.ADMIN)
         )
 
         val initialCategories = getCategoriesUseCase(regularUserId)
