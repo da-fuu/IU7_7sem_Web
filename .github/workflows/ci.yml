@@ -26,10 +26,15 @@ jobs:
           mkdir -p build/allure-results
           if [ -d .allure-history ]; then cp -r .allure-history build/allure-results/history; fi
       - name: Build test runner
-        run: docker compose -f deploy/test/docker-compose.test.yml build test-runner
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml build test-runner
+      - name: Prepare persistent Gradle caches
+        run: |
+          docker volume create timetracker-lab2-ci-gradle-cache
+          docker volume create timetracker-lab2-ci-project-cache
+          docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml run --rm --no-deps --user 0 --entrypoint sh test-runner -c "chown $TEST_UID:$TEST_GID /gradle /workspace/.gradle"
       - name: Unit tests and backend build
         id: unit
-        run: docker compose -f deploy/test/docker-compose.test.yml run --rm test-runner ./gradlew test :web:backend:jar
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml run --rm test-runner ./gradlew test :web:backend:jar
       - name: Integration tests
         id: integration
         env:
@@ -45,7 +50,7 @@ jobs:
               exit 1
             fi
           done
-          docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner ./gradlew integrationTest
+          docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner ./gradlew integrationTest
       - name: Check shared backend and cleanup service
         id: backend_check
         env:
@@ -74,7 +79,7 @@ jobs:
           POSTGRES_TEST_USER: ${{ vars.POSTGRES_TEST_USER || 'timetracker_test' }}
           POSTGRES_TEST_PASSWORD: ${{ secrets.POSTGRES_TEST_PASSWORD || 'timetracker_test_pass' }}
           SERVER_URL: ${{ vars.SHARED_BACKEND_URL || 'http://127.0.0.1:18081' }}
-        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner python3 deploy/test/scripts/e2e_control.py run -- ./gradlew e2eTest
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml -f deploy/test/docker-compose.shared-runner.yml run --rm test-runner python3 deploy/test/scripts/e2e_control.py run -- ./gradlew e2eTest
       - name: Mark unexecuted stages
         if: always()
         env:
@@ -92,7 +97,7 @@ jobs:
       - name: Generate report
         id: report
         if: always()
-        run: docker compose -f deploy/test/docker-compose.test.yml run --rm --no-deps test-runner ./gradlew allureReport
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml run --rm --no-deps test-runner ./gradlew allureReport
       - name: Save history
         if: always()
         run: if [ -d build/reports/allure-report/history ]; then mkdir -p .allure-history; cp -r build/reports/allure-report/history/. .allure-history/; fi
@@ -119,7 +124,7 @@ jobs:
           path: build/reports/allure-report
       - name: Remove isolated test environment
         if: always()
-        run: docker compose -f deploy/test/docker-compose.test.yml down -v --remove-orphans
+        run: docker compose -f deploy/test/docker-compose.test.yml -f deploy/test/docker-compose.ci.yml down -v --remove-orphans
 
   publish-report:
     if: always() && needs.tests.outputs.pages_artifact == 'success'

@@ -12,6 +12,12 @@ plugins {
 }
 
 allprojects {
+    tasks.withType<Test>().configureEach {
+        if (providers.environmentVariable("CI").orNull == "true") {
+            outputs.upToDateWhen { false }
+            outputs.doNotCacheIf("CI executes every test run") { true }
+        }
+    }
     configurations.all {
         resolutionStrategy {
             force("org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.kotlin.get()}")

@@ -1,0 +1,15 @@
+services:
+  test-runner:
+    environment:
+      CI: "true"
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.caching=true
+    volumes:
+      - ci-project-cache:/workspace/.gradle
+
+volumes:
+  gradle-cache:
+    external: true
+    name: timetracker-lab2-ci-gradle-cache
+  ci-project-cache:
+    external: true
+    name: timetracker-lab2-ci-project-cache
