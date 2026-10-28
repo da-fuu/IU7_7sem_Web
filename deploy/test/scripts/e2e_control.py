@@ -15,6 +15,16 @@ import uuid
 import psycopg2
 
 
+def test_client_id():
+    configured = os.environ.get("TEST_CLIENT_ID")
+    if configured:
+        return configured
+    try:
+        return getpass.getuser()
+    except (KeyError, OSError):
+        return f"uid-{os.getuid()}"
+
+
 def connect(application_name=None):
     return psycopg2.connect(
         host=os.environ.get("POSTGRES_TEST_HOST", "127.0.0.1"),
@@ -22,7 +32,7 @@ def connect(application_name=None):
         dbname=os.environ.get("POSTGRES_TEST_DB", "timetracker_test"),
         user=os.environ.get("POSTGRES_TEST_USER", "timetracker_test"),
         password=os.environ.get("POSTGRES_TEST_PASSWORD", "timetracker_test_pass"),
-        application_name=application_name or "lab2:control:" + os.environ.get("TEST_CLIENT_ID", getpass.getuser()),
+        application_name=application_name or "lab2:control:" + test_client_id(),
         connect_timeout=5,
         keepalives=1,
         keepalives_idle=10,
@@ -91,7 +101,7 @@ def run(command):
     if not command:
         raise ValueError("A test command is required")
     run_id = uuid.uuid4().hex
-    client_id = os.environ.get("TEST_CLIENT_ID", getpass.getuser())
+    client_id = test_client_id()
     lease = connect(f"lab2:e2e:{client_id}:{run_id[:8]}"[:63])
     lease.autocommit = True
     process = None
