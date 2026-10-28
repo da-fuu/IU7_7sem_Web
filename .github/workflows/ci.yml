@@ -3,6 +3,7 @@ on:
   push:
   workflow_dispatch:
 env:
+  TEST_CLIENT_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
   COMPOSE_PROJECT_NAME: lab2-ci-${{ github.run_id }}-${{ github.run_attempt }}
 jobs:
   tests:

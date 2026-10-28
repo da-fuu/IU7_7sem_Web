@@ -63,7 +63,7 @@ tasks.jar {
 tasks.test {
     include("**/*Test.*")
     exclude("**/*ITCase.*")
-    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
+    systemProperty("allure.results.directory", System.getenv("ALLURE_RESULTS_DIR") ?: rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
 }
 
 val e2eTest by tasks.registering(Test::class) {
@@ -73,7 +73,7 @@ val e2eTest by tasks.registering(Test::class) {
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     include("**/MvpScenarioITCase.*")
-    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
+    systemProperty("allure.results.directory", System.getenv("ALLURE_RESULTS_DIR") ?: rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
     systemProperty("DB_HOST", System.getenv("POSTGRES_TEST_HOST") ?: "localhost")
     systemProperty("DB_PORT", System.getenv("POSTGRES_TEST_PORT") ?: "5434")
     systemProperty("DB_NAME", System.getenv("POSTGRES_TEST_DB") ?: "timetracker_test")

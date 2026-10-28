@@ -12,6 +12,8 @@ results.mkdir(parents=True, exist_ok=True)
 def stage_of(result):
     labels = {label.get("name"): label.get("value", "") for label in result.get("labels", [])}
     class_name = labels.get("testClass", "")
+    if result.get("fullName") == "lab2.e2e.infrastructure":
+        return "E2E"
     if result.get("fullName") == "lab2.e2e_cleanup":
         return "CLEANUP"
     if class_name.endswith("MvpScenarioITCase"):

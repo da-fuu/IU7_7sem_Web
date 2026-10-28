@@ -7,4 +7,5 @@ services:
       POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-timetracker_test}
       POSTGRES_TEST_USER: ${POSTGRES_TEST_USER:-timetracker_test}
       POSTGRES_TEST_PASSWORD: ${POSTGRES_TEST_PASSWORD:-timetracker_test_pass}
+      TEST_CLIENT_ID: ${TEST_CLIENT_ID:-developer}
       SERVER_URL: ${SERVER_URL:-http://127.0.0.1:18081}

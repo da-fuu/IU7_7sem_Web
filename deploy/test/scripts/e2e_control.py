@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import getpass
+import json
 from contextlib import closing
 import os
+from pathlib import Path
+import traceback
 import signal
 import subprocess
 import sys
@@ -11,13 +15,14 @@ import uuid
 import psycopg2
 
 
-def connect():
+def connect(application_name=None):
     return psycopg2.connect(
         host=os.environ.get("POSTGRES_TEST_HOST", "127.0.0.1"),
         port=os.environ.get("POSTGRES_TEST_PORT", "55432"),
         dbname=os.environ.get("POSTGRES_TEST_DB", "timetracker_test"),
         user=os.environ.get("POSTGRES_TEST_USER", "timetracker_test"),
         password=os.environ.get("POSTGRES_TEST_PASSWORD", "timetracker_test_pass"),
+        application_name=application_name or "lab2:control:" + os.environ.get("TEST_CLIENT_ID", getpass.getuser()),
         connect_timeout=5,
         keepalives=1,
         keepalives_idle=10,
@@ -56,6 +61,13 @@ def cleanup_all(connection):
         cleanup_run(connection, run_id)
 
 
+def log_test_clients(connection):
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT application_name, count(*) FROM pg_stat_activity WHERE datname = current_database() AND (application_name LIKE 'lab2:int:%' OR application_name LIKE 'lab2:e2e:%') GROUP BY application_name ORDER BY application_name")
+        clients = [{"client": name, "connections": count} for name, count in cursor.fetchall()]
+    print("Shared stand active test clients: " + json.dumps(clients), flush=True)
+
+
 def watch():
     while True:
         try:
@@ -68,6 +80,7 @@ def watch():
                         continue
                 while True:
                     cleanup_all(connection)
+                    log_test_clients(connection)
                     time.sleep(2)
         except Exception as error:
             print(f"E2E cleanup failed: {error}", file=sys.stderr, flush=True)
@@ -78,7 +91,8 @@ def run(command):
     if not command:
         raise ValueError("A test command is required")
     run_id = uuid.uuid4().hex
-    lease = connect()
+    client_id = os.environ.get("TEST_CLIENT_ID", getpass.getuser())
+    lease = connect(f"lab2:e2e:{client_id}:{run_id[:8]}"[:63])
     lease.autocommit = True
     process = None
     try:
@@ -131,4 +145,25 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as error:
+        results = Path(os.environ.get("ALLURE_RESULTS_DIR", "build/allure-results"))
+        results.mkdir(parents=True, exist_ok=True)
+        identifier = uuid.uuid4().hex
+        now = int(time.time() * 1000)
+        entry = {
+            "uuid": identifier,
+            "historyId": "lab2-e2e-infrastructure",
+            "fullName": "lab2.e2e.infrastructure",
+            "name": "E2E: shared database and run cleanup",
+            "status": "broken",
+            "statusDetails": {"message": str(error), "trace": traceback.format_exc()},
+            "stage": "finished",
+            "start": now,
+            "stop": now,
+            "labels": [{"name": "suite", "value": "E2E infrastructure"}],
+        }
+        (results / f"{identifier}-result.json").write_text(json.dumps(entry), encoding="utf-8")
+        traceback.print_exc()
+        sys.exit(1)

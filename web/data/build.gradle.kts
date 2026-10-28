@@ -23,7 +23,7 @@ tasks.jar {
 tasks.test {
     exclude("**/*ITCase.*")
     finalizedBy(tasks.jacocoTestReport)
-    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
+    systemProperty("allure.results.directory", System.getenv("ALLURE_RESULTS_DIR") ?: rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
     project.findProperty("test.random.seed")?.let {
         systemProperty("test.random.seed", it.toString())
     }
@@ -69,5 +69,5 @@ val integrationTest by tasks.registering(Test::class) {
     testClassesDirs = sourceSets["test"].output.classesDirs
     classpath = sourceSets["test"].runtimeClasspath
     include("**/*ITCase.*")
-    systemProperty("allure.results.directory", rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
+    systemProperty("allure.results.directory", System.getenv("ALLURE_RESULTS_DIR") ?: rootProject.layout.buildDirectory.dir("allure-results").get().asFile.absolutePath)
 }

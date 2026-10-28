@@ -2,6 +2,7 @@ name: timetracker-lab2-shared
 services:
   postgres:
     image: postgres:16-alpine
+    command: ["postgres", "-c", "log_connections=on", "-c", "log_disconnections=on", "-c", "log_line_prefix=%m [%p] app=%a user=%u db=%d "]
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${SHARED_POSTGRES_DB:-timetracker_test}

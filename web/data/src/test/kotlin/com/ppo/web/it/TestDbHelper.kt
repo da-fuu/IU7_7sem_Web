@@ -10,6 +10,7 @@ import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import java.security.MessageDigest
+import java.util.UUID
 import javax.sql.DataSource
 
 object TestPasswordHasher : IPasswordHasher {
@@ -29,6 +30,7 @@ object TestDbHelper {
             jdbcUrl = "jdbc:postgresql://$host:$port/$dbName"
             username = user
             password = pass
+            addDataSourceProperty("ApplicationName", "lab2:int:${System.getenv("TEST_CLIENT_ID") ?: System.getProperty("user.name")}:${UUID.randomUUID().toString().take(8)}".take(63))
             maximumPoolSize = 2
             minimumIdle = 0
             connectionTimeout = 5000
