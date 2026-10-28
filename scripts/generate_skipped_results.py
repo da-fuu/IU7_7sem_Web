@@ -33,7 +33,6 @@ stages = (
     ("UNIT", "Unit tests", True),
     ("INTEGRATION", "Integration tests", True),
     ("BACKEND", "Shared backend and cleanup service", False),
-    ("CLEANUP", "E2E cleanup isolation", False),
     ("E2E", "E2E tests", True),
 )
 for stage, title, mark_skipped in stages:
